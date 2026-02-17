@@ -13,7 +13,7 @@
             <h3>PHOTOGRAPHERS</h3>
             
             <div class="search-box">
-                <input type="text" id="photogSearch" placeholder="SEARCH..." onkeyup="handleSearch(event)">
+                <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHER...">
             </div>
 
             <div id="photog-filters" class="filter-nav">
@@ -21,17 +21,18 @@
         </aside>
 
         <main class="content-area">
+            
             <section id="lobby">
                 <div class="header">
-        <h1>MY HAUS</h1>
-    <p>PHOTOGRAPHY ANTHOLOGY</p>
-    
-    <div class="category-nav">
-        <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
-        <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
-        <span class="category-item active-category" onclick="filterEras('all')">All</span>
-    </div>
-</div>
+                    <h1>MY HAUS</h1>
+                    <p>PHOTOGRAPHY ANTHOLOGY</p>
+                    
+                    <div class="category-nav">
+                        <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
+                        <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
+                        <span class="category-item active-category" onclick="filterEras('all')">All</span>
+                    </div>
+                </div>
                 
                 <div class="era-grid" id="era-menu"></div>
             </section>
@@ -40,9 +41,11 @@
                 <header class="header">
                     <button class="back-btn" onclick="showLobby()">← BACK</button>
                     <h2 id="active-title"></h2>
+                    
                     <nav id="sub-era-nav" class="sub-nav"></nav>
                 </header>
-                <div class="photo-wall" id="photo-display"></div>
+                
+                <div id="photo-display"></div>
             </section>
         </main>
     </div>
@@ -51,6 +54,7 @@
         <button class="close-btn" onclick="closeLightbox()">×</button>
         <button class="lb-nav lb-prev" onclick="changeImage(-1)">«</button>
         <button class="lb-nav lb-next" onclick="changeImage(1)">»</button>
+        
         <div class="lightbox-content">
             <img id="lightbox-img" src="">
             <div class="lightbox-footer">
@@ -71,7 +75,7 @@
     <script src="eras/love.js"></script>
     <script src="eras/harlequin.js"></script>
     <script src="eras/mayhem.js"></script>
+    
     <script src="script.js"></script>
 </body>
-
 </html>
