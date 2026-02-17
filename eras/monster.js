@@ -50,9 +50,9 @@ window.gagaArchive["the-fame-monster"] = {
         { url: "https://static.wikia.nocookie.net/ladygaga/images/2/27/The_Monster_Ball_Tour_Dec_21_001.jpg", photogKey: "getty", year: "2009", desc: "MONSTER BALL - LOS ANGELES (DEC 21)" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/b/b5/The_Monster_Ball_Tour_Dec_31_001.jpg", photogKey: "getty", year: "2009", desc: "MONSTER BALL - MIAMI (DEC 31)" },
 
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/b/ba/2-15-08_Angus_Smythe_014.jpg/revision/latest?cb=20121127120543", photogKey: "angus-smythe", year: "2008", desc: "Feb 15: Angus Smythe Session" },
+        //test
+         { url: "https://static.wikia.nocookie.net/ladygaga/images/b/ba/2-15-08_Angus_Smythe_014.jpg/revision/latest?cb=20121127120543", photogKey: "angus-smythe", year: "2008", desc: "Feb 15: Angus Smythe Session" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/f/f9/2-15-08_Angus_Smythe_038.jpg/revision/latest?cb=20110604211138", photogKey: "angus-smythe", year: "2008", desc: "Feb 15: Angus Smythe Session" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/b/bf/2-15-08_Angus_Smythe_002.jpg/revision/latest?cb=20150604031306", photogKey: "angus-smythe", year: "2008", desc: "Feb 15: Angus Smythe Session" },
     ]
-
 };
