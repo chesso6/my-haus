@@ -62,9 +62,10 @@ function filterEras(category) {
 
 function openEra(key) {
     currentEraKey = key;
-    currentPhotogFilter = 'all';
+
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('exhibition-room').style.display = 'block';
+
     updateSubNavHighlight(key);
     
     const eraPhotos = window.gagaArchive[key].photos;
@@ -72,7 +73,7 @@ function openEra(key) {
                         .filter(k => k && window.gagaPhotogs[k]);
     
     renderSidebar(keysInEra);
-    renderPhotos('all');
+    renderPhotos(currentPhotogFilter);
 }
 
 function renderSidebar(keys = null) {
@@ -131,18 +132,28 @@ function renderPhotos(filterKey, btn = null, targetMonth = null) {
     display.innerHTML = '';
 
     let rawPhotos = [];
-    if (filterKey === 'all') {
-        if (!currentEraKey) { showLobby(); return; }
+    if (currentEraKey) {
         document.getElementById('active-title').innerText = window.gagaArchive[currentEraKey].title;
         rawPhotos = window.gagaArchive[currentEraKey].photos;
-    } else {
-        const photogName = window.gagaPhotogs[filterKey]?.name || filterKey;
+        if (currentPhotogFilter != 'all') {
+            rawPhotos = rawPhotos.filter(p => p.photogKey === currentPhotogFilter);
+            const photogName = window.gagaPhotogs[currentPhotogFilter]?.name || currentPhotogFilter;
+            document.getElementById('active-title').innerText = `${window.gagaArchive[currentEraKey].title} — ${photogName.toUpperCase()}`;
+        }
+    } 
+    else if (currentPhotogFilter !== 'all') {
+        const photogName = window.gagaPhotogs[currentPhotogFilter]?.name || currentPhotogFilter;
         document.getElementById('active-title').innerText = photogName.toUpperCase();
         
         Object.keys(window.gagaArchive).forEach(eraKey => {
-            const eraPhotos = window.gagaArchive[eraKey].photos.filter(p => p.photogKey === filterKey);
+            const eraPhotos = window.gagaArchive[eraKey].photos.filter(p => p.photogKey === currentPhotogFilter);
             rawPhotos = [...rawPhotos, ...eraPhotos];
         });
+    }
+
+    if (rawPhotos.length === 0) {
+        display.innerHTML = `<div class="no-results">NO PHOTOS BY THIS PHOTOGRAPHER IN THIS ERA.</div>`;
+        return;
     }
 
     currentFilteredPhotos = rawPhotos;
@@ -277,7 +288,7 @@ function filterPhotographers() {
     for (let i = 0; i < buttons.length; i++) {
         const txtValue = buttons[i].textContent || buttons[i].innerText;
         if (txtValue === "ALL") {
-            buttons[i].style.display = "";
+            buttons[i].style.display = filter === "" ? "" : "none";
             continue;
         }
         buttons[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
