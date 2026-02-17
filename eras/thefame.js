@@ -5,8 +5,8 @@ window.gagaArchive["the-fame"] = {
     albumArt: "assets/images/thefame.png",
     type: 'studio',
     photos: [
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/1/17/2-12-08_Warwick_Saint_126-final.jpg/revision/latest/scale-to-width-down/1000?cb=20110312151615", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Just Dance Promo Tour" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/0/09/2-12-08_Warwick_Saint_228-final.jpg/revision/latest/scale-to-width-down/1000?cb=20110312153051", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Promotional Session" },
+        { url: "https://static.wikia.nocookie.net/ladygaga/images/1/17/2-12-08_Warwick_Saint_126-final.jpg", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Just Dance Promo Tour" },
+        { url: "https://static.wikia.nocookie.net/ladygaga/images/0/09/2-12-08_Warwick_Saint_228-final.jpg", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Promotional Session" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/a/a3/2-12-08_Warwick_Saint_322-final.jpg/revision/latest/scale-to-width-down/1000?cb=20110312153050", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Promotional Session" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/c/cd/2-12-08_Warwick_Saint_401-final.jpg/revision/latest/scale-to-width-down/1000?cb=20110312153159", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Promotional Session" },
         { url: "https://static.wikia.nocookie.net/ladygaga/images/c/cb/2-12-08_Warwick_Saint_619-final.jpg/revision/latest/scale-to-width-down/1000?cb=20110312153244", photogKey: "warwick-saint", year: "2008", desc: "Feb 12: Promotional Session" },
@@ -221,4 +221,5 @@ window.gagaArchive["the-fame"] = {
         { url: "https://static.wikia.nocookie.net/ladygaga/images/4/48/6-10-08_David_C._Lee_002.jpg/revision/latest/scale-to-width-down/1000?cb=20110323210121", photogKey: "david-c-lee", year: "2008", desc: "June 10: David C. Lee Session"},
         { url: "https://static.wikia.nocookie.net/ladygaga/images/2/23/6-10-08_David_C._Lee_006.jpg/revision/latest?cb=20110616212713", photogKey: "david-c-lee", year: "2008", desc: "June 10: David C. Lee Session"}
         ]
+
 };
