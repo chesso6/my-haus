@@ -12,29 +12,33 @@
         
         <div id="sidebar">
             <h3>PHOTOGRAPHERS</h3>
-                <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHERS...">
+            <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHERS...">
             <div id="photog-filters">
             </div>
         </div>
 
         <main class="content-area">
             <section id="lobby">
-                <div class="header">
-                    <h1>MY HAUS</h1>
-                    <p>PHOTOGRAPHY ANTHOLOGY</p>
-                    <div class="category-nav">
-                        <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
-                        <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
-                        <span class="category-item active-category" onclick="filterEras('all')">All</span>
+                <header id="global-header" class="global-header">
+                    <div class="header-content">
+                        <h1>MY HAUS</h1>
+                        <p>PHOTOGRAPHY ANTHOLOGY</p>
+                        <div class="category-nav">
+                            <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
+                            <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
+                            <span class="category-item active-category" onclick="filterEras('all')">All</span>
+                        </div>
                     </div>
-                </div>
+                </header>
                 <div class="era-grid" id="era-menu"></div>
             </section>
 
             <section id="exhibition-room" style="display: none;">
                 <header class="header">
                     <button class="back-btn" onclick="showLobby()">← BACK</button>
-                    <h2 id="active-title"></h2>
+                    <div class="era-title-container">
+                        <h1 id="active-title"></h1>
+                    </div>
                     <nav id="sub-era-nav" class="sub-nav"></nav>
                 </header>
                 <div id="photo-display"></div>
@@ -55,6 +59,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
     <script src="photographers/registry.js"></script>
     <script src="eras/thefame.js"></script>
     <script src="eras/monster.js"></script>
@@ -67,9 +74,6 @@
     <script src="eras/harlequin.js"></script>
     <script src="eras/mayhem.js"></script>
     
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
     <script src="script.js"></script>
 </body>
 </html>
