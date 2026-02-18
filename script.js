@@ -84,37 +84,40 @@ function loadArchiveFromFirebase(callback) {
 
     archiveRef.once('value')
         .then((snapshot) => {
-            const firebaseData = snapshot.val() || {};
+    const firebaseData = snapshot.val() || {};
 
-            Object.keys(firebaseData).forEach(eraKey => {
-                if (!window.gagaArchive[eraKey]) {
-                    window.gagaArchive[eraKey] = {
-                        title: eraKey.replace(/-/g, ' ').toUpperCase(),
-                        photos: []
-                    };
+    Object.keys(firebaseData).forEach(eraKey => {
+        if (!window.gagaArchive[eraKey]) {
+            window.gagaArchive[eraKey] = {
+                title: eraKey.replace(/-/g, ' ').toUpperCase(),
+                photos: []
+            };
+        }
+
+        // Safely get photos - default to empty array if invalid
+        const fbPhotos = Array.isArray(firebaseData[eraKey]?.photos) 
+            ? firebaseData[eraKey].photos 
+            : [];
+
+        let localPhotos = Array.isArray(window.gagaArchive[eraKey].photos) 
+            ? window.gagaArchive[eraKey].photos 
+            : [];
+
+        fbPhotos.forEach(fbPhoto => {
+            if (fbPhoto && fbPhoto.url) {  // basic validation
+                const alreadyExists = localPhotos.some(p => p.url === fbPhoto.url);
+                if (!alreadyExists) {
+                    localPhotos.push(fbPhoto);
                 }
-
-                const fbPhotos = firebaseData[eraKey].photos || [];
-                let localPhotos = window.gagaArchive[eraKey].photos || [];
-
-                fbPhotos.forEach(fbPhoto => {
-                    const alreadyExists = localPhotos.some(p => p.url === fbPhoto.url);
-                    if (!alreadyExists) {
-                        localPhotos.push(fbPhoto);
-                    }
-                });
-
-                window.gagaArchive[eraKey].photos = localPhotos;
-            });
-
-            console.log("Firebase photos merged successfully");
-            callback();
-        })
-        .catch((error) => {
-            console.error("Failed to load from Firebase:", error);
-            alert("Couldn't load shared photos. Using local eras only.");
-            callback();
+            }
         });
+
+        window.gagaArchive[eraKey].photos = localPhotos;
+    });
+
+    console.log("Firebase photos merged successfully");
+    callback();
+})
 }
 
 function init() {
