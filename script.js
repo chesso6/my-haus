@@ -84,48 +84,67 @@ function loadArchiveFromFirebase(callback) {
 
     archiveRef.once('value')
         .then((snapshot) => {
-    const firebaseData = snapshot.val() || {};
+            const firebaseData = snapshot.val() || {};
 
-    Object.keys(firebaseData).forEach(eraKey => {
-        if (!window.gagaArchive[eraKey]) {
-            window.gagaArchive[eraKey] = {
-                title: eraKey.replace(/-/g, ' ').toUpperCase(),
-                photos: []
-            };
-        }
+            console.log("Firebase raw keys:", Object.keys(firebaseData));
+console.log("Firebase raw data:", JSON.stringify(firebaseData, null, 2));
 
-        // Safely get photos - default to empty array if invalid
-        const fbPhotos = Array.isArray(firebaseData[eraKey]?.photos) 
-            ? firebaseData[eraKey].photos 
-            : [];
+            Object.keys(firebaseData).forEach(eraKey => {
+                const normalizedKey = eraKey.toLowerCase().replace(/\s+/g, '-');
 
-        let localPhotos = Array.isArray(window.gagaArchive[eraKey].photos) 
-            ? window.gagaArchive[eraKey].photos 
-            : [];
-
-        fbPhotos.forEach(fbPhoto => {
-            if (fbPhoto && fbPhoto.url) {  // basic validation
-                const alreadyExists = localPhotos.some(p => p.url === fbPhoto.url);
-                if (!alreadyExists) {
-                    localPhotos.push(fbPhoto);
+                if (!window.gagaArchive[normalizedKey]) {
+                    window.gagaArchive[normalizedKey] = {
+                        title: eraKey.toUpperCase(),
+                        photos: []
+                    };
                 }
+
+const rawFbPhotos = firebaseData[eraKey]?.photos || {};
+const fbPhotos = Array.isArray(rawFbPhotos)
+    ? rawFbPhotos
+    : Object.values(rawFbPhotos);
+
+                let localPhotos = Array.isArray(window.gagaArchive[normalizedKey].photos) 
+                    ? window.gagaArchive[normalizedKey].photos 
+                    : [];
+
+                fbPhotos.forEach(fbPhoto => {
+                    if (fbPhoto && fbPhoto.url) {
+                        const alreadyExists = localPhotos.some(p => p.url === fbPhoto.url);
+                        if (!alreadyExists) {
+                            localPhotos.push(fbPhoto);
+                        }
+                    }
+                });
+
+                window.gagaArchive[normalizedKey].photos = localPhotos;
+            });
+
+            console.log("Firebase photos merged successfully");
+
+            if (document.getElementById('exhibition-room')?.style.display !== 'none') {
+                renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage);
             }
+
+            callback(); 
+        })
+        .catch((error) => {
+            console.error("Failed to load from Firebase:", error);
+            alert("Couldn't load shared photos. Using local eras only.");
+            callback();
         });
-
-        window.gagaArchive[eraKey].photos = localPhotos;
-    });
-
-    console.log("Firebase photos merged successfully");
-    callback();
-})
 }
 
 function init() {
-
-    console.log("Local eras loaded:", Object.keys(window.gagaArchive || {}));
-    console.log("Photographers loaded:", Object.keys(window.gagaPhotogs || {}).length);
+    console.log("=== PAGE INIT START ===");
+    console.log("Local eras before Firebase:", Object.keys(window.gagaArchive || {}));
+    console.log("Photographers before Firebase:", Object.keys(window.gagaPhotogs || {}).length);
 
     loadArchiveFromFirebase(() => {
+        console.log("=== AFTER FIREBASE MERGE ===");
+        console.log("Eras after merge:", Object.keys(window.gagaArchive || {}));
+        console.log("Total photos in artpop:", window.gagaArchive["artpop"]?.photos?.length || 0);
+
         filterEras('all');
         renderSidebar();
         if (isOwner) renderOwnerUI();
@@ -216,16 +235,19 @@ function saveNewPhoto() {
     const eraKey = document.getElementById('m-era').value;
 
     if (!url || !year || !eraKey) return alert("URL, Year, and Era are required.");
+if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
+
+    const normalizedEraKey = eraKey.toLowerCase().replace(/\s+/g, '-');
 
     const newPhoto = { url, desc, event, year, photogKey };
 
     if (archiveRef) {
-        const eraPhotosRef = database.ref(`gagaArchive/${eraKey}/photos`);
+        const eraPhotosRef = database.ref(`gagaArchive/${normalizedEraKey}/photos`);
         eraPhotosRef.push(newPhoto)
             .then(() => {
                 alert("Photo saved to shared archive!");
                 document.getElementById('owner-modal').remove();
-                location.reload(); // refresh to show new photo (or call renderPhotos)
+                location.reload();  
             })
             .catch(err => {
                 console.error("Save failed:", err);
@@ -247,7 +269,7 @@ function deletePhoto(photoUrl) {
             const photos = eraSnap.child('photos').val() || {};
             Object.keys(photos).forEach(photoKey => {
                 if (photos[photoKey].url === photoUrl) {
-                    updates[`gagaArchive/${eraKey}/photos/${photoKey}`] = null;
+                    updates[`${eraKey}/photos/${photoKey}`] = null;
                 }
             });
         });
@@ -323,11 +345,11 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
     let rawPhotos = [];
 
     if (currentEraKey) {
-        rawPhotos = window.gagaArchive[currentEraKey].photos || [];
+        rawPhotos = window.gagaArchive[currentEraKey]?.photos || [];
         if (currentPhotogFilter !== 'all') {
             rawPhotos = rawPhotos.filter(p => p.photogKey === currentPhotogFilter);
         }
-        const eraTitle = window.gagaArchive[currentEraKey].title;
+        const eraTitle = window.gagaArchive[currentEraKey]?.title || "UNKNOWN";
         const photogName = window.gagaPhotogs[filterKey]?.name;
         if (currentPhotogFilter === 'all' || !photogName) {
             titleEl.innerText = eraTitle;
@@ -335,12 +357,12 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             titleEl.innerText = `${eraTitle} — ${photogName.toUpperCase()}`;
         }
     } else {
-        Object.keys(window.gagaArchive).forEach(eraKey => {
-            let photos = window.gagaArchive[eraKey].photos;
+        Object.keys(window.gagaArchive || {}).forEach(eraKey => {
+            let photos = window.gagaArchive[eraKey]?.photos || [];
             if (currentPhotogFilter !== 'all') photos = photos.filter(p => p.photogKey === currentPhotogFilter);
             rawPhotos = [...rawPhotos, ...photos];
         });
-        titleEl.innerText = (filterKey === 'all') ? "FULL ARCHIVE" : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase()}`;
+        titleEl.innerText = (filterKey === 'all') ? "FULL ARCHIVE" : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase() || "UNKNOWN"}`;
     }
 
     if (rawPhotos.length === 0) {
@@ -365,7 +387,8 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
 
     const yearGroups = {};
     rawPhotos.forEach((photo, index) => {
-        const year = photo.year || "MISC";
+    const year = photo.year;
+    if (!year) return;
         if (!yearGroups[year]) yearGroups[year] = [];
         yearGroups[year].push({ ...photo, globalIndex: index });
     });
@@ -446,7 +469,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
 
             const headerRow = document.createElement('div');
             headerRow.className = 'year-month-header';
-            headerRow.dataset.year = year;  
+            headerRow.dataset.year = year;
 
             const yearEl = document.createElement('span');
             yearEl.className = 'year-label';
@@ -619,7 +642,6 @@ function openEra(key) {
     if (sidebar) { sidebar.style.display = 'flex'; }
     renderPhotos();
 }
-
 
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
