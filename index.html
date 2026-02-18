@@ -9,31 +9,25 @@
 <body>
 
     <div class="main-layout">
-        <aside class="sidebar">
+        
+        <div id="sidebar">
             <h3>PHOTOGRAPHERS</h3>
-            
-            <div class="search-box">
-                <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHER...">
+                <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHERS...">
+            <div id="photog-filters">
             </div>
-
-            <div id="photog-filters" class="filter-nav">
-                </div>
-        </aside>
+        </div>
 
         <main class="content-area">
-            
             <section id="lobby">
                 <div class="header">
                     <h1>MY HAUS</h1>
                     <p>PHOTOGRAPHY ANTHOLOGY</p>
-                    
                     <div class="category-nav">
                         <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
                         <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
                         <span class="category-item active-category" onclick="filterEras('all')">All</span>
                     </div>
                 </div>
-                
                 <div class="era-grid" id="era-menu"></div>
             </section>
 
@@ -41,21 +35,18 @@
                 <header class="header">
                     <button class="back-btn" onclick="showLobby()">← BACK</button>
                     <h2 id="active-title"></h2>
-                    
                     <nav id="sub-era-nav" class="sub-nav"></nav>
                 </header>
-                
                 <div id="photo-display"></div>
             </section>
         </main>
     </div>
 
-    <div id="lightbox" class="lightbox" style="display:none;">
+    <div id="lightbox" class="lightbox" style="display:none;" onclick="closeLightbox()">
         <button class="close-btn" onclick="closeLightbox()">×</button>
-        <button class="lb-nav lb-prev" onclick="changeImage(-1)">«</button>
-        <button class="lb-nav lb-next" onclick="changeImage(1)">»</button>
-        
-        <div class="lightbox-content">
+        <button class="lb-nav lb-prev" onclick="event.stopPropagation(); changeImage(-1)">«</button>
+        <button class="lb-nav lb-next" onclick="event.stopPropagation(); changeImage(1)">»</button>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
             <img id="lightbox-img" src="">
             <div class="lightbox-footer">
                 <div id="lightbox-caption" class="lightbox-caption"></div>
@@ -76,6 +67,9 @@
     <script src="eras/harlequin.js"></script>
     <script src="eras/mayhem.js"></script>
     
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <script src="script.js"></script>
 </body>
 </html>
