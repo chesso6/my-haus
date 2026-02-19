@@ -98,6 +98,7 @@ function loadArchiveFromFirebase(callback) {
                 });
             });
             callback();
+            renderSidebar();
         })
         .catch(() => callback());
 }
@@ -685,7 +686,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             rawPhotos = rawPhotos.filter(p => p.photogKey === currentPhotogFilter);
         }
         const eraTitle = window.gagaArchive[currentEraKey]?.title || "UNKNOWN";
-        const photogName = window.gagaPhotogs[filterKey]?.name;
+        const photogName = window.gagaPhotogs[filterKey]?.name || (filterKey !== 'all' ? filterKey : null);
         titleEl.innerText = (currentPhotogFilter === 'all' || !photogName)
             ? eraTitle
             : `${eraTitle} — ${photogName.toUpperCase()}`;
@@ -698,7 +699,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         });
         titleEl.innerText = (filterKey === 'all')
             ? "FULL GALLERY"
-            : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase() || "UNKNOWN"}`;
+            : `ALL WORK BY ${(window.gagaPhotogs[filterKey]?.name || filterKey).toUpperCase()}`;
     }
 
     if (rawPhotos.length === 0) {
@@ -1016,16 +1017,37 @@ function renderSidebar() {
     const nav = document.getElementById('photog-filters');
     if (!nav) return;
     nav.innerHTML = '';
+
+    const knownKeys = new Set(Object.keys(window.gagaPhotogs || {}));
+    const customNames = new Set();
+
+    Object.keys(window.gagaArchive || {}).forEach(eraKey => {
+        let photos = window.gagaArchive[eraKey]?.photos || [];
+        if (!Array.isArray(photos)) photos = Object.values(photos);
+        photos.forEach(p => {
+            if (p && p.photogKey && p.photogKey !== 'NONE' && !knownKeys.has(p.photogKey)) {
+                customNames.add(p.photogKey);
+            }
+        });
+    });
+
     Object.keys(window.gagaPhotogs || {}).forEach(pKey => {
         const btn = document.createElement('button');
         btn.innerText = window.gagaPhotogs[pKey].name.toUpperCase();
         btn.onclick = () => { currentEraKey = ""; renderPhotos(pKey); };
         nav.appendChild(btn);
     });
+
+    [...customNames].sort().forEach(name => {
+        const btn = document.createElement('button');
+        btn.innerText = name.toUpperCase();
+        btn.onclick = () => { currentEraKey = ""; renderPhotos(name); };
+        nav.appendChild(btn);
+    });
 }
 
 function handlePhotogClick(event, photogKey) {
-    if (photogKey === "NONE") return;
+    if (!photogKey || photogKey === "NONE") return;
     event.stopPropagation();
     currentEraKey = "";
     currentPage = 1;
