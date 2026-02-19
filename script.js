@@ -6,6 +6,7 @@ let currentFilteredPhotos = [];
 let currentIndex = 0;
 let currentPhotogFilter = 'all';
 let currentTargetMonth = null;
+let currentTargetYear = null;
 
 const MONTH_ALIASES = {
     "JAN": "JANUARY",
@@ -79,30 +80,31 @@ function getSessionKey(photo) {
 }
 
 function loadArchiveFromFirebase(callback) {
-    if (!archiveRef) {
-        callback();
-        return;
-    }
+    if (!archiveRef) { callback(); return; }
     archiveRef.once('value')
         .then((snapshot) => {
             const firebaseData = snapshot.val() || {};
             Object.keys(firebaseData).forEach(eraKey => {
                 const nk = eraKey.toLowerCase().replace(/\s+/g, '-');
-                if (!window.gagaArchive[nk]) window.gagaArchive[nk] = { title: eraKey.toUpperCase(), photos: [] };
+                if (!window.gagaArchive[nk]) {
+                    window.gagaArchive[nk] = { title: eraKey.toUpperCase(), photos: [] };
+                }
                 const raw = firebaseData[eraKey]?.photos || {};
                 const fbPhotos = Array.isArray(raw) ? raw : Object.values(raw);
-                const localPhotos = window.gagaArchive[nk].photos || [];
+
+                // Push directly into the archive array (not a copy)
+                const existingUrls = new Set(window.gagaArchive[nk].photos.map(p => p.url));
                 fbPhotos.forEach(p => {
-                    if (p && p.url && !localPhotos.some(lp => lp.url === p.url)) {
-                        localPhotos.push(p);
+                    if (p && p.url && !existingUrls.has(p.url)) {
+                        window.gagaArchive[nk].photos.push(p);
                     }
                 });
-                window.gagaArchive[nk].photos = localPhotos;
             });
             callback();
         })
         .catch(() => callback());
 }
+
 function init() {
     loadArchiveFromFirebase(() => {
         filterEras('all');
@@ -400,10 +402,11 @@ function createPhotoItem(photo, observer) {
     return photoDiv;
 }
 
-function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth = null, page = 1) {
+function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth = null, page = 1, targetYear = currentTargetYear) {
     currentPhotogFilter = filterKey;
     currentPage = page;
     currentTargetMonth = targetMonth;
+    currentTargetYear = targetYear;
 
     const display = document.getElementById('photo-display');
     const titleEl = document.getElementById('active-title');
@@ -423,7 +426,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             ? eraTitle
             : `${eraTitle} — ${photogName.toUpperCase()}`;
     } else {
-        // Full archive — collect from ALL eras
         Object.keys(window.gagaArchive || {}).forEach(eraKey => {
             let photos = window.gagaArchive[eraKey]?.photos || [];
             if (!Array.isArray(photos)) photos = Object.values(photos);
@@ -431,7 +433,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             rawPhotos = [...rawPhotos, ...photos];
         });
         titleEl.innerText = (filterKey === 'all')
-            ? "FULL ARCHIVE"
+            ? "FULL GALLERY"
             : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase() || "UNKNOWN"}`;
     }
 
@@ -466,17 +468,27 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
     const sortedYears = Object.keys(yearGroups).sort((a, b) => a - b);
     const allSessions = [];
 
-    sortedYears.forEach(year => {
-        if (yearGroups[year].length === 0) return;
-
-        let availableMonths = new Set();
-        yearGroups[year].forEach(p => {
+    const allYearMonths = {};
+    sortedYears.forEach(y => {
+        const months = new Set();
+        yearGroups[y].forEach(p => {
             const m = detectMonth(p.event || p.desc || '');
-            if (m) availableMonths.add(m);
+            if (m) months.add(m);
         });
-        const sortedAvailableMonths = Array.from(availableMonths).sort((a, b) =>
-            FULL_MONTHS.indexOf(a) - FULL_MONTHS.indexOf(b)
-        );
+        allYearMonths[y] = Array.from(months).sort((a, b) => FULL_MONTHS.indexOf(a) - FULL_MONTHS.indexOf(b));
+    });
+
+    const yearsToRender = (targetYear && !currentEraKey) ? [targetYear] : sortedYears;
+
+    yearsToRender.forEach(year => {
+        if (!yearGroups[year] || yearGroups[year].length === 0) return;
+
+        const availableMonths = allYearMonths[year];
+
+        let effectiveMonth = targetMonth;
+        if (targetMonth && !availableMonths.includes(targetMonth)) {
+            effectiveMonth = availableMonths[0] || null;
+        }
 
         const filteredPhotos = targetMonth
             ? yearGroups[year].filter(p => detectMonth(p.event || p.desc || '') === targetMonth)
@@ -512,7 +524,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
                 sessionKey,
                 photos: sessionGroups[sessionKey],
                 isFirstOfYear: i === 0,
-                availableMonths: sortedAvailableMonths
+                availableMonths: availableMonths
             });
         });
     });
@@ -528,7 +540,41 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
     const endIdx = Math.min(startIdx + SESSIONS_PER_PAGE, totalSessions);
     const pageSessions = allSessions.slice(startIdx, endIdx);
 
-    const renderedYears = new Set();
+    const renderedYears = new Set();    
+
+    function buildPagination() {
+        if (totalPages <= 1) return null;
+        const pagination = document.createElement('div');
+        pagination.className = 'pagination';
+
+        if (currentPage > 1) {
+            const prev = document.createElement('span');
+            prev.textContent = '← PREV';
+            prev.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage - 1); window.scrollTo(0, 0); };
+            pagination.appendChild(prev);
+        }
+
+        for (let p = 1; p <= totalPages; p++) {
+            const pageLink = document.createElement('span');
+            pageLink.textContent = p;
+            if (p === currentPage) {
+                pageLink.style.fontWeight = 'bold';
+                pageLink.style.color = '#fff';
+                pageLink.style.borderBottom = '1px solid #ff0000';
+            }
+            pageLink.onclick = ((pg) => () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, pg); window.scrollTo(0, 0); })(p);
+            pagination.appendChild(pageLink);
+        }
+
+        if (currentPage < totalPages) {
+            const next = document.createElement('span');
+            next.textContent = 'NEXT →';
+            next.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage + 1); window.scrollTo(0, 0); };
+            pagination.appendChild(next);
+        }
+
+        return pagination;
+    }
 
     pageSessions.forEach(({ year, sessionKey, photos, availableMonths }, sessionIdx) => {
 
@@ -563,8 +609,49 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
                 monthContainer.appendChild(link);
             });
 
+            if (!currentEraKey) {
+                const yearJumpRow = document.createElement('div');
+                yearJumpRow.className = 'year-jump-links';
+
+                const activeYear = currentTargetYear || year;
+
+                const activeYl = document.createElement('span');
+                activeYl.className = 'month-link active';
+                activeYl.textContent = activeYear;
+                activeYl.onclick = () => renderPhotos(currentPhotogFilter, null, currentTargetMonth, 1, activeYear);
+                yearJumpRow.appendChild(activeYl);
+
+                const sep = document.createElement('span');
+                sep.textContent = '|';
+                sep.style.color = 'rgba(255,255,255,0.2)';
+                sep.style.cursor = 'default';
+                yearJumpRow.appendChild(sep);
+
+                sortedYears.filter(y => y !== activeYear).forEach(y => {
+                    const yl = document.createElement('span');
+                    yl.className = 'month-link';
+                    yl.textContent = y;
+                    yl.onclick = () => {
+                        const targetYearMonths = allYearMonths[y] || [];
+                        const monthToUse = (currentTargetMonth && targetYearMonths.includes(currentTargetMonth))
+                            ? currentTargetMonth
+                            : null;
+                        renderPhotos(currentPhotogFilter, null, monthToUse, 1, y);
+                        window.scrollTo(0, 0);
+                    };
+                    yearJumpRow.appendChild(yl);
+                });
+
+                headerRow.appendChild(yearJumpRow);
+            }
+
             headerRow.appendChild(monthContainer);
             display.appendChild(headerRow);
+
+            if (sessionIdx === 0) {
+                const topPag = buildPagination();
+                if (topPag) display.appendChild(topPag);
+            }
         }
 
         const uniqueEvents = [...new Set(
@@ -598,38 +685,9 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         display.appendChild(sessionBox);
     });
 
-    if (totalPages > 1) {
-        const pagination = document.createElement('div');
-        pagination.className = 'pagination';
 
-        if (currentPage > 1) {
-            const prev = document.createElement('span');
-            prev.textContent = '← PREV';
-            prev.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage - 1); window.scrollTo(0, 0); };
-            pagination.appendChild(prev);
-        }
-
-        for (let p = 1; p <= totalPages; p++) {
-            const pageLink = document.createElement('span');
-            pageLink.textContent = p;
-            if (p === currentPage) {
-                pageLink.style.fontWeight = 'bold';
-                pageLink.style.color = '#000';
-                pageLink.style.textDecoration = 'underline';
-            }
-            pageLink.onclick = ((pg) => () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, pg); window.scrollTo(0, 0); })(p);
-            pagination.appendChild(pageLink);
-        }
-
-        if (currentPage < totalPages) {
-            const next = document.createElement('span');
-            next.textContent = 'NEXT →';
-            next.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage + 1); window.scrollTo(0, 0); };
-            pagination.appendChild(next);
-        }
-
-        display.appendChild(pagination);
-    }
+    const bottomPagination = buildPagination();
+    if (bottomPagination) display.appendChild(bottomPagination);
 
     setTimeout(fixYearMonthBar, 0);
 }
@@ -753,12 +811,12 @@ function updateLightbox() {
         : '';
 
     document.getElementById('lightbox-caption').innerHTML = `
+    <div style="flex:1; min-width:0;">
         <div class="lb-title">${name} ${d.year ? '(' + d.year + ')' : ''}</div>
         <div class="lb-desc">${d.event || d.desc || ""}</div>
-        <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
-            ${delBtn}
-        </div>
-    `;
+    </div>
+    ${delBtn}
+`;
 }
 
 async function downloadImage() {
