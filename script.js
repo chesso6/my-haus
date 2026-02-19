@@ -161,7 +161,7 @@ function openAddModal() {
     modal.style = `position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#000; border:1px solid #333; padding:30px; z-index:9999; display:flex; flex-direction:column; gap:15px; width:350px; color:#fff; box-shadow: 0 0 30px rgba(0,0,0,1);`;
 
     const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
-        `<option value="${k}">${window.gagaPhotogs[k].name}</option>`
+        `<option value="${window.gagaPhotogs[k].name}">${window.gagaPhotogs[k].name}</option>`
     ).join('');
 
     modal.innerHTML = `
@@ -170,11 +170,11 @@ function openAddModal() {
         <input type="text" id="m-desc" placeholder="DESC (e.g. Promotional Session)" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
         <input type="text" id="m-event" placeholder="EVENT (e.g. FEB 14: SWIMSUIT STORE)" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
         <input type="number" id="m-year" placeholder="YEAR (2025)" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
-        <label style="font-size:9px; opacity:0.6;">PHOTOGRAPHER</label>
-        <select id="m-photog" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
-            <option value="NONE">NONE (NO NAME)</option>
+        <label style="font-size:9px; opacity:0.6;">PHOTOGRAPHER (type a name or leave blank)</label>
+        <input type="text" id="m-photog-input" placeholder="e.g. Inez and Vinoodh" list="m-photog-list" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+        <datalist id="m-photog-list">
             ${photogOptions}
-        </select>
+        </datalist>
         <label style="font-size:9px; opacity:0.6;">ERA CATEGORY</label>
         <select id="m-era" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
             ${Object.keys(window.gagaArchive || {}).map(k =>
@@ -192,11 +192,17 @@ function saveNewPhoto() {
     const desc = document.getElementById('m-desc').value.trim();
     const event = document.getElementById('m-event').value.trim();
     const year = document.getElementById('m-year').value.trim();
-    const photogKey = document.getElementById('m-photog').value;
+    const photogRaw = document.getElementById('m-photog-input').value.trim();
     const eraKey = document.getElementById('m-era').value;
 
     if (!url || !year || !eraKey) return alert("URL, Year, and Era are required.");
     if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
+
+    const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
+        window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
+    );
+
+    const photogKey = matchedKey || (photogRaw ? photogRaw : "NONE");
 
     const normalizedEraKey = eraKey.toLowerCase().replace(/\s+/g, '-');
     const newPhoto = { url, desc, event, year, photogKey };
@@ -613,9 +619,11 @@ function createPhotoItem(photo, observer) {
     photoDiv.className = 'photo-item';
     if (isOwner) photoDiv.draggable = true;
 
-    const photogDisplay = (photo.photogKey === "NONE" || !window.gagaPhotogs[photo.photogKey])
+    const photogDisplay = (photo.photogKey === "NONE" || !photo.photogKey)
         ? ""
-        : window.gagaPhotogs[photo.photogKey].name.toUpperCase();
+        : (window.gagaPhotogs[photo.photogKey]
+            ? window.gagaPhotogs[photo.photogKey].name.toUpperCase()
+            : photo.photogKey.toUpperCase());
 
     const descLabel = photo.desc ? photo.desc.toUpperCase() : '';
 
@@ -1040,8 +1048,11 @@ function openLightbox(i) {
 
 function updateLightbox() {
     const d = currentFilteredPhotos[currentIndex];
-    const name = (d.photogKey === "NONE" || !window.gagaPhotogs[d.photogKey])
-        ? "" : window.gagaPhotogs[d.photogKey].name.toUpperCase();
+    const name = (d.photogKey === "NONE" || !d.photogKey)
+        ? ""
+        : (window.gagaPhotogs[d.photogKey]
+            ? window.gagaPhotogs[d.photogKey].name.toUpperCase()
+            : d.photogKey.toUpperCase());
 
     document.getElementById('lightbox-img').src = d.url;
 
