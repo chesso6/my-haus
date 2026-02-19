@@ -1,5 +1,5 @@
 if (!window.gagaPhotogs) window.gagaPhotogs = {
-    "ladygaga": { name: "Lady Gaga" },
+    "ladygaga": { name: "Polaroid / Gaga" },
 };
 
 const photographerList = [
@@ -31,3 +31,4 @@ photographerList.forEach(name => {
     }
 
 });
+
