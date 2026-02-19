@@ -58,7 +58,6 @@ try {
     firebase.initializeApp(firebaseConfig);
     database = firebase.database();
     archiveRef = database.ref('gagaArchive');
-    console.log("Firebase initialized");
 } catch (error) {
     console.error("Firebase init failed:", error);
 }
@@ -91,8 +90,6 @@ function loadArchiveFromFirebase(callback) {
                 }
                 const raw = firebaseData[eraKey]?.photos || {};
                 const fbPhotos = Array.isArray(raw) ? raw : Object.values(raw);
-
-                // Push directly into the archive array (not a copy)
                 const existingUrls = new Set(window.gagaArchive[nk].photos.map(p => p.url));
                 fbPhotos.forEach(p => {
                     if (p && p.url && !existingUrls.has(p.url)) {
@@ -213,11 +210,110 @@ function saveNewPhoto() {
                 location.reload();
             })
             .catch(err => {
-                console.error("Save failed:", err);
                 alert("Failed to save: " + err.message);
             });
     } else {
         alert("No connection to shared archive.");
+    }
+}
+
+function openEditModal(photoUrl) {
+    if (!archiveRef) return alert("No connection.");
+
+    archiveRef.once('value').then(snapshot => {
+        let foundEraKey = null;
+        let foundPhotoKey = null;
+        let foundPhoto = null;
+
+        snapshot.forEach(eraSnap => {
+            const photos = eraSnap.child('photos').val() || {};
+            Object.keys(photos).forEach(pk => {
+                if (photos[pk].url === photoUrl) {
+                    foundEraKey = eraSnap.key;
+                    foundPhotoKey = pk;
+                    foundPhoto = photos[pk];
+                }
+            });
+        });
+
+        if (!foundPhoto) return alert("Photo not found in shared archive.");
+
+        const existingModal = document.getElementById('owner-modal');
+        if (existingModal) existingModal.remove();
+
+        const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
+            `<option value="${k}" ${foundPhoto.photogKey === k ? 'selected' : ''}>${window.gagaPhotogs[k].name}</option>`
+        ).join('');
+
+        const eraOptions = Object.keys(window.gagaArchive || {}).map(k =>
+            `<option value="${k}" ${foundEraKey === k ? 'selected' : ''}>${window.gagaArchive[k].title || k.toUpperCase()}</option>`
+        ).join('');
+
+        const modal = document.createElement('div');
+        modal.id = "owner-modal";
+        modal.style = `position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#000; border:1px solid #333; padding:30px; z-index:9999; display:flex; flex-direction:column; gap:15px; width:380px; color:#fff; box-shadow: 0 0 30px rgba(0,0,0,1); max-height:90vh; overflow-y:auto;`;
+
+        modal.innerHTML = `
+            <h2 style="margin:0; font-size:10px; letter-spacing:4px; text-transform:uppercase; color:#ffaa00;">[EDIT] PHOTO INFO</h2>
+            <label style="font-size:9px; opacity:0.6;">IMAGE URL</label>
+            <input type="text" id="e-url" value="${foundPhoto.url || ''}" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+            <label style="font-size:9px; opacity:0.6;">DESC</label>
+            <input type="text" id="e-desc" value="${foundPhoto.desc || ''}" placeholder="e.g. Promotional Session" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+            <label style="font-size:9px; opacity:0.6;">EVENT</label>
+            <input type="text" id="e-event" value="${foundPhoto.event || ''}" placeholder="e.g. FEB 14: SWIMSUIT STORE" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+            <label style="font-size:9px; opacity:0.6;">YEAR</label>
+            <input type="number" id="e-year" value="${foundPhoto.year || ''}" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+            <label style="font-size:9px; opacity:0.6;">PHOTOGRAPHER</label>
+            <select id="e-photog" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+                <option value="NONE" ${foundPhoto.photogKey === 'NONE' ? 'selected' : ''}>NONE (NO NAME)</option>
+                ${photogOptions}
+            </select>
+            <label style="font-size:9px; opacity:0.6;">ERA CATEGORY</label>
+            <select id="e-era" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+                ${eraOptions}
+            </select>
+            <button onclick="saveEditedPhoto('${foundEraKey}', '${foundPhotoKey}', '${photoUrl}')" style="background:#ffaa00; color:#000; border:none; padding:12px; cursor:pointer; font-weight:bold; letter-spacing:2px; font-size:10px;">SAVE CHANGES</button>
+            <button onclick="document.getElementById('owner-modal').remove()" style="background:transparent; color:#555; border:none; cursor:pointer; font-size:10px; letter-spacing:1px;">CANCEL</button>
+        `;
+        document.body.appendChild(modal);
+    });
+}
+
+function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
+    const url = document.getElementById('e-url').value.trim();
+    const desc = document.getElementById('e-desc').value.trim();
+    const event = document.getElementById('e-event').value.trim();
+    const year = document.getElementById('e-year').value.trim();
+    const photogKey = document.getElementById('e-photog').value;
+    const newEraKey = document.getElementById('e-era').value;
+
+    if (!url || !year) return alert("URL and Year are required.");
+
+    const updatedPhoto = { url, desc, event, year, photogKey };
+    const eraChanged = newEraKey !== originalEraKey;
+
+    if (eraChanged) {
+        const deleteRef = database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`);
+        const newEraPhotosRef = database.ref(`gagaArchive/${newEraKey}/photos`);
+        deleteRef.remove()
+            .then(() => newEraPhotosRef.push(updatedPhoto))
+            .then(() => {
+                alert("Photo moved and updated!");
+                document.getElementById('owner-modal').remove();
+                closeLightbox();
+                location.reload();
+            })
+            .catch(err => alert("Update failed: " + err.message));
+    } else {
+        database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`)
+            .set(updatedPhoto)
+            .then(() => {
+                alert("Photo updated!");
+                document.getElementById('owner-modal').remove();
+                closeLightbox();
+                location.reload();
+            })
+            .catch(err => alert("Update failed: " + err.message));
     }
 }
 
@@ -291,6 +387,144 @@ function setupSearchKey() {
     }
 }
 
+let dragSrc = null;
+
+function makeDraggable(grid, photosRef) {
+    function getItems() {
+        return Array.from(grid.querySelectorAll('.photo-item:not(.photo-item-empty)'));
+    }
+
+    grid.addEventListener('dragstart', (e) => {
+        const item = e.target.closest('.photo-item');
+        if (!item || item.classList.contains('photo-item-empty')) return;
+        dragSrc = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+    });
+
+    grid.addEventListener('dragend', (e) => {
+        const item = e.target.closest('.photo-item');
+        if (item) item.classList.remove('dragging');
+        grid.querySelectorAll('.photo-item').forEach(i => i.classList.remove('drag-over'));
+        dragSrc = null;
+    });
+
+    grid.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const target = e.target.closest('.photo-item');
+        if (!target || target === dragSrc || target.classList.contains('photo-item-empty')) return;
+        grid.querySelectorAll('.photo-item').forEach(i => i.classList.remove('drag-over'));
+        target.classList.add('drag-over');
+    });
+
+    grid.addEventListener('dragleave', (e) => {
+        const target = e.target.closest('.photo-item');
+        if (target) target.classList.remove('drag-over');
+    });
+
+    grid.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const target = e.target.closest('.photo-item');
+        if (!target || target === dragSrc || target.classList.contains('photo-item-empty')) return;
+        target.classList.remove('drag-over');
+
+        const items = getItems();
+        const srcIdx = items.indexOf(dragSrc);
+        const tgtIdx = items.indexOf(target);
+        if (srcIdx === -1 || tgtIdx === -1) return;
+
+        if (srcIdx < tgtIdx) {
+            grid.insertBefore(dragSrc, target.nextSibling);
+        } else {
+            grid.insertBefore(dragSrc, target);
+        }
+
+        [photosRef[srcIdx], photosRef[tgtIdx]] = [photosRef[tgtIdx], photosRef[srcIdx]];
+
+        showDragSaveBar(grid, photosRef);
+    });
+}
+
+function showDragSaveBar(grid, photosRef) {
+    const wrapper = grid.closest('.session-photos-wrapper');
+    if (!wrapper) return;
+    let bar = wrapper.querySelector('.drag-save-bar');
+    if (bar) {
+        bar.querySelectorAll('button')[0].onclick = () => saveDragOrder(bar.querySelectorAll('button')[0], photosRef.map(p => p.url));
+        return;
+    }
+
+    bar = document.createElement('div');
+    bar.className = 'drag-save-bar';
+    bar.innerHTML = `
+        <span>UNSAVED ORDER CHANGES</span>
+        <button>SAVE ORDER</button>
+        <button style="background:transparent; color:#888; border:1px solid #333;" onclick="location.reload()">CANCEL</button>
+    `;
+    bar.querySelectorAll('button')[0].onclick = () => saveDragOrder(bar.querySelectorAll('button')[0], photosRef.map(p => p.url));
+    wrapper.appendChild(bar);
+}
+
+function saveDragOrder(btn, orderedUrls) {
+    if (!archiveRef) return alert("No connection.");
+    btn.textContent = 'SAVING...';
+    btn.disabled = true;
+
+    archiveRef.once('value').then(snapshot => {
+        const eraPhotoMap = {};
+
+        snapshot.forEach(eraSnap => {
+            const photos = eraSnap.child('photos').val() || {};
+            Object.keys(photos).forEach(pk => {
+                if (orderedUrls.includes(photos[pk].url)) {
+                    if (!eraPhotoMap[eraSnap.key]) eraPhotoMap[eraSnap.key] = {};
+                    eraPhotoMap[eraSnap.key][pk] = photos[pk];
+                }
+            });
+        });
+
+        const promises = [];
+        Object.keys(eraPhotoMap).forEach(eraKey => {
+            const existingEntries = eraPhotoMap[eraKey];
+            const existingKeys = Object.keys(existingEntries);
+
+            const orderedForEra = orderedUrls
+                .map(url => Object.values(existingEntries).find(p => p.url === url))
+                .filter(Boolean);
+
+            const deletePromises = existingKeys.map(k =>
+                database.ref(`gagaArchive/${eraKey}/photos/${k}`).remove()
+            );
+
+            promises.push(
+                Promise.all(deletePromises).then(() => {
+                    return orderedForEra.reduce((chain, photo) => {
+                        return chain.then(() =>
+                            database.ref(`gagaArchive/${eraKey}/photos`).push(photo)
+                        );
+                    }, Promise.resolve());
+                })
+            );
+        });
+
+        Promise.all(promises)
+            .then(() => {
+                const bar = btn.closest('.drag-save-bar');
+                if (bar) {
+                    bar.innerHTML = `<span style="color:#00ff88;">✓ ORDER SAVED</span>`;
+                    setTimeout(() => location.reload(), 800);
+                }
+            })
+            .catch(err => {
+                alert("Save failed: " + err.message);
+                btn.textContent = 'SAVE ORDER';
+                btn.disabled = false;
+            });
+    });
+}
+
 function buildSessionPhotoGrid(sessionKey, photos, observer) {
     const wrapper = document.createElement('div');
     wrapper.className = 'session-photos-wrapper';
@@ -298,45 +532,45 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
     const totalPhotos = photos.length;
 
     if (totalPhotos <= PHOTOS_PER_SESSION_PAGE) {
-    const grid = document.createElement('div');
-    grid.className = 'photo-wall-inner';
-    photos.forEach(photo => {
-        grid.appendChild(createPhotoItem(photo, observer));
-    });
-    const remaining = PHOTOS_PER_SESSION_PAGE - totalPhotos;
-    for (let i = 0; i < remaining; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'photo-item photo-item-empty';
-        grid.appendChild(empty);
+        const grid = document.createElement('div');
+        grid.className = 'photo-wall-inner';
+        const pagePhotosRef = photos.slice();
+        pagePhotosRef.forEach(photo => grid.appendChild(createPhotoItem(photo, observer)));
+        const remaining = PHOTOS_PER_SESSION_PAGE - totalPhotos;
+        for (let i = 0; i < remaining; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'photo-item photo-item-empty';
+            grid.appendChild(empty);
+        }
+        if (isOwner) makeDraggable(grid, pagePhotosRef);
+        wrapper.appendChild(grid);
+        return wrapper;
     }
-    wrapper.appendChild(grid);
-    return wrapper;
-}
 
     const totalSessionPages = Math.ceil(totalPhotos / PHOTOS_PER_SESSION_PAGE);
     if (!sessionPhotoPages[sessionKey]) sessionPhotoPages[sessionKey] = 1;
 
     function renderPage() {
-    wrapper.innerHTML = '';
-    const pg = sessionPhotoPages[sessionKey];
-    const start = (pg - 1) * PHOTOS_PER_SESSION_PAGE;
-    const end = Math.min(start + PHOTOS_PER_SESSION_PAGE, totalPhotos);
-    const pagePhotos = photos.slice(start, end);
+        wrapper.innerHTML = '';
+        const pg = sessionPhotoPages[sessionKey];
+        const start = (pg - 1) * PHOTOS_PER_SESSION_PAGE;
+        const end = Math.min(start + PHOTOS_PER_SESSION_PAGE, totalPhotos);
+        const pagePhotos = photos.slice(start, end);
+        const pagePhotosRef = pagePhotos.slice();
 
-    const grid = document.createElement('div');
-    grid.className = 'photo-wall-inner';
-    pagePhotos.forEach(photo => {
-        grid.appendChild(createPhotoItem(photo, observer));
-    });
+        const grid = document.createElement('div');
+        grid.className = 'photo-wall-inner';
+        pagePhotosRef.forEach(photo => grid.appendChild(createPhotoItem(photo, observer)));
 
-    const remaining = PHOTOS_PER_SESSION_PAGE - pagePhotos.length;
-    for (let i = 0; i < remaining; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'photo-item photo-item-empty';
-        grid.appendChild(empty);
-    }
+        const remaining = PHOTOS_PER_SESSION_PAGE - pagePhotos.length;
+        for (let i = 0; i < remaining; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'photo-item photo-item-empty';
+            grid.appendChild(empty);
+        }
 
-    wrapper.appendChild(grid);
+        if (isOwner) makeDraggable(grid, pagePhotosRef);
+        wrapper.appendChild(grid);
 
         const pager = document.createElement('div');
         pager.className = 'session-pagination';
@@ -354,7 +588,7 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
             if (p === pg) {
                 link.style.fontWeight = 'bold';
                 link.style.textDecoration = 'underline';
-                link.style.color = '#000';
+                link.style.color = '#fff';
             }
             link.onclick = ((page) => () => { sessionPhotoPages[sessionKey] = page; renderPage(); })(p);
             pager.appendChild(link);
@@ -377,6 +611,7 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
 function createPhotoItem(photo, observer) {
     const photoDiv = document.createElement('div');
     photoDiv.className = 'photo-item';
+    if (isOwner) photoDiv.draggable = true;
 
     const photogDisplay = (photo.photogKey === "NONE" || !window.gagaPhotogs[photo.photogKey])
         ? ""
@@ -384,7 +619,17 @@ function createPhotoItem(photo, observer) {
 
     const descLabel = photo.desc ? photo.desc.toUpperCase() : '';
 
+    const editOverlay = isOwner
+        ? `<div class="owner-edit-overlay" onclick="event.stopPropagation(); openEditModal('${photo.url}')">✎ EDIT</div>`
+        : '';
+
+    const dragHandle = isOwner
+        ? `<div class="drag-handle">⠿</div>`
+        : '';
+
     photoDiv.innerHTML = `
+        ${editOverlay}
+        ${dragHandle}
         <img data-src="${photo.url}" loading="lazy"
              onclick="openLightbox(${photo.globalIndex})"
              style="opacity:0; transition: opacity 0.3s;">
@@ -397,6 +642,7 @@ function createPhotoItem(photo, observer) {
 
     const img = photoDiv.querySelector('img');
     img.onload = () => img.style.opacity = '1';
+    img.addEventListener('mousedown', (e) => e.stopPropagation());
     observer.observe(img);
     return photoDiv;
 }
@@ -484,11 +730,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
 
         const availableMonths = allYearMonths[year];
 
-        let effectiveMonth = targetMonth;
-        if (targetMonth && !availableMonths.includes(targetMonth)) {
-            effectiveMonth = availableMonths[0] || null;
-        }
-
         const filteredPhotos = targetMonth
             ? yearGroups[year].filter(p => detectMonth(p.event || p.desc || '') === targetMonth)
             : yearGroups[year];
@@ -539,7 +780,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
     const endIdx = Math.min(startIdx + SESSIONS_PER_PAGE, totalSessions);
     const pageSessions = allSessions.slice(startIdx, endIdx);
 
-    const renderedYears = new Set();    
+    const renderedYears = new Set();
 
     function buildPagination() {
         if (totalPages <= 1) return null;
@@ -684,7 +925,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         display.appendChild(sessionBox);
     });
 
-
     const bottomPagination = buildPagination();
     if (bottomPagination) display.appendChild(bottomPagination);
 
@@ -805,16 +1045,19 @@ function updateLightbox() {
 
     document.getElementById('lightbox-img').src = d.url;
 
-    const delBtn = isOwner
-        ? `<button onclick="deletePhoto('${d.url}')" style="background:#ff4444; color:white; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px;">DELETE PERMANENT</button>`
-        : '';
+    const ownerBtns = isOwner ? `
+        <button onclick="openEditModal('${d.url}')" style="background:#ffaa00; color:#000; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px; letter-spacing:1px;">✎ EDIT</button>
+        <button onclick="deletePhoto('${d.url}')" style="background:#ff4444; color:white; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px;">DELETE</button>
+    ` : '';
 
     document.getElementById('lightbox-caption').innerHTML = `
     <div style="flex:1; min-width:0;">
         <div class="lb-title">${name} ${d.year ? '(' + d.year + ')' : ''}</div>
         <div class="lb-desc">${d.event || d.desc || ""}</div>
     </div>
-    ${delBtn}
+    <div style="display:flex; gap:8px; flex-shrink:0; align-items:center;">
+        ${ownerBtns}
+    </div>
 `;
 }
 
@@ -866,4 +1109,3 @@ function fixYearMonthBar() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
-
