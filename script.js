@@ -248,8 +248,14 @@ function openEditModal(photoUrl) {
         if (existingModal) existingModal.remove();
 
         const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
-            `<option value="${k}" ${foundPhoto.photogKey === k ? 'selected' : ''}>${window.gagaPhotogs[k].name}</option>`
+            `<option value="${window.gagaPhotogs[k].name}">${window.gagaPhotogs[k].name}</option>`
         ).join('');
+
+        const currentPhotogName = foundPhoto.photogKey === 'NONE' || !foundPhoto.photogKey
+            ? ''
+            : (window.gagaPhotogs[foundPhoto.photogKey]
+                ? window.gagaPhotogs[foundPhoto.photogKey].name
+                : foundPhoto.photogKey);
 
         const eraOptions = Object.keys(window.gagaArchive || {}).map(k =>
             `<option value="${k}" ${foundEraKey === k ? 'selected' : ''}>${window.gagaArchive[k].title || k.toUpperCase()}</option>`
@@ -269,11 +275,11 @@ function openEditModal(photoUrl) {
             <input type="text" id="e-event" value="${foundPhoto.event || ''}" placeholder="e.g. FEB 14: SWIMSUIT STORE" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
             <label style="font-size:9px; opacity:0.6;">YEAR</label>
             <input type="number" id="e-year" value="${foundPhoto.year || ''}" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
-            <label style="font-size:9px; opacity:0.6;">PHOTOGRAPHER</label>
-            <select id="e-photog" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
-                <option value="NONE" ${foundPhoto.photogKey === 'NONE' ? 'selected' : ''}>NONE (NO NAME)</option>
+            <label style="font-size:9px; opacity:0.6;">PHOTOGRAPHER (type a name or leave blank)</label>
+            <input type="text" id="e-photog-input" value="${currentPhotogName}" placeholder="e.g. Inez and Vinoodh" list="e-photog-list" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
+            <datalist id="e-photog-list">
                 ${photogOptions}
-            </select>
+            </datalist>
             <label style="font-size:9px; opacity:0.6;">ERA CATEGORY</label>
             <select id="e-era" style="background:#111; border:1px solid #333; color:#fff; padding:10px; font-size:10px;">
                 ${eraOptions}
@@ -290,10 +296,15 @@ function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
     const desc = document.getElementById('e-desc').value.trim();
     const event = document.getElementById('e-event').value.trim();
     const year = document.getElementById('e-year').value.trim();
-    const photogKey = document.getElementById('e-photog').value;
+    const photogRaw = document.getElementById('e-photog-input').value.trim();
     const newEraKey = document.getElementById('e-era').value;
 
     if (!url || !year) return alert("URL and Year are required.");
+
+    const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
+        window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
+    );
+    const photogKey = matchedKey || (photogRaw ? photogRaw : "NONE");
 
     const updatedPhoto = { url, desc, event, year, photogKey };
     const eraChanged = newEraKey !== originalEraKey;
