@@ -75,6 +75,7 @@ body {
     min-width: 0;
 }
 
+/* ── LOBBY GLOBAL HEADER ── */
 .global-header {
     position: fixed;         
     top: 0;
@@ -183,6 +184,7 @@ body {
     text-align: center;
 }
 
+/* ── EXHIBITION HEADER ── */
 .header {
     position: sticky;
     top: 0;
@@ -244,6 +246,7 @@ body {
     font-weight: bold; 
 }
 
+/* ── YEAR + MONTH BAR ── */
 .year-month-header {
     display: flex;
     align-items: baseline;
@@ -256,6 +259,7 @@ body {
     top: 0;
     background: #fff;
     z-index: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .year-label {
@@ -288,6 +292,7 @@ body {
     text-decoration: underline;
 }
 
+/* ── SESSION BOX ── */
 .event-session-box {
     margin: 0 30px 60px;
     border: 1px solid #eee;
@@ -297,13 +302,10 @@ body {
 .session-layout {
     display: flex;
     align-items: stretch;
+    min-height: 200px;
 }
 
-.session-layout {
-    display: flex;
-    align-items: stretch;
-}
-
+/* Left label */
 .session-label {
     width: 180px;
     min-width: 180px;
@@ -337,45 +339,23 @@ body {
     line-height: 1.6;
 }
 
-.session-label {
-    width: 180px;
-    min-width: 180px;
-    background: #000;
-    color: #fff;
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 10px;
-}
-
-.session-date {
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    line-height: 1.4;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    padding-bottom: 10px;
-    margin-bottom: 4px;
-}
-
-.event-sub-title {
-    display: block;
-    font-size: 9px;
-    font-weight: normal;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    opacity: 0.7;
-    line-height: 1.6;
-}
-
+/* Right photo area */
 .photo-wall {
     flex: 1;
+    min-width: 0;
+    padding: 0;
+}
+
+.session-photos-wrapper {
+    width: 100%;
+}
+
+.photo-wall-inner {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    padding: 25px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    padding: 20px;
+    width: 100%;
 }
 
 .photo-item {
@@ -429,6 +409,29 @@ body {
     font-weight: normal;
 }
 
+/* ── SESSION PHOTO PAGINATION ── */
+.session-pagination {
+    text-align: center;
+    padding: 14px 0 18px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #555;
+    border-top: 1px solid #eee;
+}
+
+.session-pagination span {
+    cursor: pointer;
+    margin: 0 8px;
+    transition: 0.2s;
+    text-transform: uppercase;
+}
+
+.session-pagination span:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+/* ── GLOBAL PAGINATION ── */
 .pagination {
     text-align: center;
     padding: 50px 0 100px;
@@ -448,6 +451,7 @@ body {
     text-decoration: underline;
 }
 
+/* ── LIGHTBOX ── */
 #lightbox {
     position: fixed; 
     inset: 0;
@@ -552,24 +556,4 @@ body {
     font-size: 14px;
     color: #777;
     letter-spacing: 2px;
-}
-
-.year-month-header {
-    position: sticky;
-    top: 60px;                    
-    z-index: 500;
-    background: #fff;
-    border-bottom: 2px solid #111;
-    margin-bottom: 20px;         
-}
-
-.header {
-    position: sticky;
-    top: 0;
-    z-index: 600;              
-    background: #fff;
-}
-
-.year-month-header {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
