@@ -8,7 +8,7 @@
     --off-white: #e8e4dc;
     --gray-dark: #0a0a0a;
     --gray-mid: #1a1a1a;
-    --gray-light: #555555;
+    --gray-light: #888888;
     --gray-muted: #333333;
     --border: rgba(255,255,255,0.1);
     --border-bright: rgba(255,255,255,0.3);
@@ -64,7 +64,7 @@ body::after {
 #sidebar h3 {
     padding: 18px 16px 10px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 13px;
+    font-size: 16px;
     letter-spacing: 5px;
     color: var(--white);
     text-transform: uppercase;
@@ -76,7 +76,7 @@ body::after {
     margin: 12px 10px 8px;
     padding: 9px 12px;
     border: 1px solid var(--border-bright);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     outline: none;
     letter-spacing: 2px;
@@ -93,7 +93,7 @@ body::after {
 
 #photogSearch::placeholder {
     color: var(--gray-light);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 #photog-filters button {
@@ -103,14 +103,14 @@ body::after {
     background: none;
     border: none;
     border-bottom: 1px solid rgba(255,255,255,0.03);
-    padding: 9px 16px;
-    font-size: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
     cursor: pointer;
     text-transform: uppercase;
-    color: var(--gray-light);
+    color: var(--off-white);
     letter-spacing: 1px;
     font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 400;
+    font-weight: 600;
     transition: all 0.15s;
 }
 
@@ -157,7 +157,7 @@ body::after {
 
 .global-header p {
     margin: 0 0 6px;
-    font-size: 8px;
+    font-size: 11px;
     color: var(--gray-light);
     letter-spacing: 6px;
     text-transform: uppercase;
@@ -171,7 +171,7 @@ body::after {
 }
 
 .category-item {
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--gray-light);
@@ -272,7 +272,7 @@ body::after {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -308,7 +308,7 @@ body::after {
 }
 
 .nav-item {
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--gray-light);
@@ -350,7 +350,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 18px;
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     flex-wrap: wrap;
@@ -366,7 +366,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 18px;
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     flex-wrap: wrap;
@@ -409,8 +409,8 @@ body::after {
 }
 
 .session-label {
-    width: 180px;
-    min-width: 180px;
+    width: 240px;
+    min-width: 240px;
     background: var(--black);
     color: var(--white);
     padding: 22px 16px;
@@ -433,9 +433,25 @@ body::after {
     background: var(--red);
 }
 
+.event-session-box.session-highlight {
+    outline: 2px solid var(--red);
+    transition: outline 0.3s;
+}
+
+.session-event-title {
+    padding: 10px 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--white);
+    background: var(--gray-mid);
+    border-bottom: 1px solid var(--border);
+}
+
 .session-date {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
+    font-size: 26px;
     letter-spacing: 2px;
     text-transform: uppercase;
     line-height: 1.1;
@@ -447,20 +463,36 @@ body::after {
 
 .event-sub-title {
     display: block;
-    font-size: 8px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--gray-light);
-    line-height: 1.8;
+    color: var(--off-white);
+    line-height: 2;
     font-family: 'Barlow Condensed', sans-serif;
     transition: color 0.2s;
+    word-break: break-word;
+}
+
+.event-sub-title-link {
+    cursor: pointer;
+}
+
+.event-sub-title-link:hover {
+    color: var(--red);
+    text-decoration: underline;
+}
+
+.event-sub-title.active-event {
+    color: var(--red);
+    border-bottom: 1px solid var(--red);
 }
 
 .event-session-box:hover .event-sub-title {
     color: var(--off-white);
 }
 
+/* Right photo area */
 .photo-wall {
     flex: 1;
     min-width: 0;
@@ -474,7 +506,7 @@ body::after {
 .photo-wall-inner {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 200px);
+    grid-template-rows: repeat(2, 200px); /* reduced from 320px */
     gap: 1px;
     padding: 1px;
     width: 100%;
@@ -515,7 +547,7 @@ body::after {
 .photo-info {
     padding: 8px 10px;
     text-align: center;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -536,8 +568,8 @@ body::after {
 }
 
 .info-event {
-    font-size: 10px;
-    color: #888888;
+    font-size: 12px;
+    color: #aaaaaa;
     letter-spacing: 1px;
     text-transform: uppercase;
     margin-top: 3px;
@@ -550,6 +582,7 @@ body::after {
     pointer-events: none;
 }
 
+/* Owner edit overlay on photo items */
 .owner-edit-overlay {
     position: absolute;
     top: 6px;
@@ -574,6 +607,7 @@ body::after {
     pointer-events: auto;
 }
 
+/* Drag handle */
 .drag-handle {
     position: absolute;
     top: 6px;
@@ -613,7 +647,7 @@ body::after {
     padding: 10px 16px;
     background: #111;
     border-top: 1px solid rgba(255,170,0,0.4);
-    font-size: 9px;
+    font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
     font-family: 'Space Mono', monospace;
@@ -630,7 +664,7 @@ body::after {
     border: none;
     padding: 7px 14px;
     cursor: pointer;
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -645,7 +679,7 @@ body::after {
 .session-pagination {
     text-align: left;
     padding: 10px 16px;
-    font-size: 9px;
+    font-size: 12px;
     letter-spacing: 3px;
     color: var(--gray-light);
     border-top: 1px solid var(--border);
@@ -670,7 +704,7 @@ body::after {
 .pagination {
     text-align: center;
     padding: 5px 0;
-    font-size: 10px;
+    font-size: 13px;
     letter-spacing: 3px;
     color: var(--gray-light);
     font-family: 'Space Mono', monospace;
@@ -783,8 +817,8 @@ body::after {
 }
 
 .lb-desc {
-    font-size: 9px;
-    opacity: 0.5;
+    font-size: 12px;
+    opacity: 0.75;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--off-white);
@@ -798,7 +832,7 @@ body::after {
     border: none;
     padding: 10px 20px;
     cursor: pointer;
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -931,7 +965,7 @@ body::after {
 
     .photo-wall-inner {
         grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(5, 130px); 
+        grid-template-rows: repeat(5, 130px); /* reduced from 180px */
         gap: 1px;
         padding: 1px;
     }
@@ -988,7 +1022,7 @@ body::after {
 @media (max-width: 480px) {
     .photo-wall-inner {
         grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(5, 110px); 
+        grid-template-rows: repeat(5, 110px); /* reduced from 150px */
     }
 
     .global-header h1 {
