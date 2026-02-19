@@ -1,7 +1,4 @@
 if (!window.gagaPhotogs) window.gagaPhotogs = {
-    "getty": { name: "Getty Images" },
-    "itv": { name: "ITV / X Factor" },
-    "polaroid": { name: "Polaroid / Gaga" },
     "ladygaga": { name: "Lady Gaga" },
 };
 
@@ -32,4 +29,5 @@ photographerList.forEach(name => {
     if (!window.gagaPhotogs[key]) {
         window.gagaPhotogs[key] = { name: name };
     }
+
 });
