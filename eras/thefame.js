@@ -5,12 +5,7 @@ window.gagaArchive["the-fame"] = {
     albumArt: "assets/images/thefame.png",
     type: 'studio',
     photos: [
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/1/17/2-12-08_Warwick_Saint_126-final.jpg", photogKey: "warwick-saint", year: "2008", event: "FEB 12: WARWICK SAINT PROMO", desc: "Just Dance Promo Tour" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/0/09/2-12-08_Warwick_Saint_228-final.jpg", photogKey: "warwick-saint", year: "2008", event: "FEB 12: WARWICK SAINT PROMO", desc: "Promotional Session" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/a/a3/2-12-08_Warwick_Saint_322-final.jpg", photogKey: "warwick-saint", year: "2008", event: "FEB 12: WARWICK SAINT PROMO", desc: "Promotional Session" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/c/cd/2-12-08_Warwick_Saint_401-final.jpg", photogKey: "warwick-saint", year: "2008", event: "FEB 12: WARWICK SAINT PROMO", desc: "Promotional Session" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/c/cb/2-12-08_Warwick_Saint_619-final.jpg", photogKey: "warwick-saint", year: "2008", event: "FEB 12: WARWICK SAINT PROMO", desc: "Promotional Session" },
-        { url: "https://static.wikia.nocookie.net/ladygaga/images/4/4d/2-12-08_Behind_the_Scenes_Interview_001.JPG", year: "2008", event: "FEB 12: BEHIND THE SCENES", desc: "Interview" },
+        
 
         // --- FEB 14: MANHATTAN & SWIMSUITE STORE ---
         { url: "https://static.wikia.nocookie.net/ladygaga/images/c/c4/2-14-08_In_Manhattan_001.jpg", photogKey: "brendan-sullivan", year: "2008", event: "FEB 14: MANHATTAN STREETS", desc: "In Manhattan" },
@@ -324,3 +319,4 @@ window.gagaArchive["the-fame"] = {
 
     ]
 };
+
