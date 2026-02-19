@@ -914,14 +914,18 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             }
         }
 
-        const uniqueEvents = [...new Set(
-            photos
-                .filter(p => p.event)
-                .map(p => {
-                    const parts = p.event.split(':');
-                    return parts.length > 1 ? parts.slice(1).join(':').trim().toUpperCase() : p.event.toUpperCase();
-                })
-        )];
+        const eventGroups = {};
+        const eventOrder = [];
+        photos.forEach(p => {
+            const raw = (p.event || p.desc || '').toUpperCase().trim();
+            const parts = raw.split(':');
+            const eventName = parts.length > 1 ? parts.slice(1).join(':').trim() : raw;
+            if (!eventGroups[eventName]) {
+                eventGroups[eventName] = [];
+                eventOrder.push(eventName);
+            }
+            eventGroups[eventName].push(p);
+        });
 
         const sessionBox = document.createElement('div');
         sessionBox.className = 'event-session-box';
@@ -930,7 +934,10 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             <div class="session-layout">
                 <div class="session-label">
                     <div class="session-date">${sessionKey}</div>
-                    <div class="event-sub-titles"></div>
+                    <div class="session-event-label">
+                        <div class="session-events-heading">EVENT${eventOrder.length > 1 ? 'S' : ''}</div>
+                        <div class="event-sub-titles"></div>
+                    </div>
                 </div>
                 <div class="photo-wall"></div>
             </div>
@@ -939,42 +946,28 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         const subTitlesEl = sessionBox.querySelector('.event-sub-titles');
         const photoWall = sessionBox.querySelector('.photo-wall');
 
-        let activeEvent = null;
+        let activeEvent = eventOrder[0];
 
-        function renderSessionGrid(eventFilter) {
-            const filtered = eventFilter
-                ? photos.filter(p => {
-                    if (!p.event) return false;
-                    const parts = p.event.split(':');
-                    const label = parts.length > 1 ? parts.slice(1).join(':').trim().toUpperCase() : p.event.toUpperCase();
-                    return label === eventFilter;
-                })
-                : photos;
+        function renderEventGrid(name) {
             photoWall.innerHTML = '';
-            photoWall.appendChild(buildSessionPhotoGrid(sessionKey + (eventFilter || ''), filtered, observer));
+            photoWall.appendChild(buildSessionPhotoGrid(sessionKey + name, eventGroups[name], observer));
         }
 
-        uniqueEvents.forEach(e => {
+        eventOrder.forEach((name, idx) => {
             const span = document.createElement('span');
-            span.className = 'event-sub-title event-sub-title-link';
-            span.textContent = e;
-            span.dataset.event = e;
+            span.className = 'session-event-name' + (idx === 0 ? ' active-event' : '');
+            span.textContent = name;
             span.onclick = () => {
-                if (activeEvent === e) {
-                    activeEvent = null;
-                    subTitlesEl.querySelectorAll('.event-sub-title').forEach(s => s.classList.remove('active-event'));
-                    renderSessionGrid(null);
-                } else {
-                    activeEvent = e;
-                    subTitlesEl.querySelectorAll('.event-sub-title').forEach(s => s.classList.remove('active-event'));
-                    span.classList.add('active-event');
-                    renderSessionGrid(e);
-                }
+                if (activeEvent === name) return;
+                activeEvent = name;
+                subTitlesEl.querySelectorAll('.session-event-name').forEach(s => s.classList.remove('active-event'));
+                span.classList.add('active-event');
+                renderEventGrid(name);
             };
             subTitlesEl.appendChild(span);
         });
 
-        renderSessionGrid(null);
+        renderEventGrid(activeEvent);
 
         display.appendChild(sessionBox);
     });
