@@ -124,22 +124,21 @@ function init() {
 }
 
 function showLogin() {
-    const email = prompt("EMAIL:");
-    if (!email) return;
     const pass = prompt("PASSWORD:");
-    firebase.auth().signInWithEmailAndPassword(email, pass)
-        .then(() => {
-            isOwner = true;
-            localStorage.setItem('haus_owner_mode', 'true');
-            alert("ACCESS GRANTED.");
-            location.reload();
-        })
-        .catch(() => alert("UNAUTHORIZED"));
+    if (!pass) return;
+    if (pass.toUpperCase() === OWNER_PASSWORD) {
+        isOwner = true;
+        localStorage.setItem('haus_owner_mode', 'true');
+        alert("ACCESS GRANTED.");
+        location.reload();
+    } else {
+        alert("UNAUTHORIZED");
+    }
 }
 
 function logout() {
-    firebase.auth().signOut().catch(() => {});
     localStorage.removeItem('haus_owner_mode');
+    isOwner = false;
     location.reload();
 }
 
@@ -867,3 +866,4 @@ function fixYearMonthBar() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
