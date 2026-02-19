@@ -461,6 +461,46 @@ body::after {
     margin-bottom: 4px;
 }
 
+.session-event-label {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.session-events-heading {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+    font-family: 'Space Mono', monospace;
+    font-weight: 400;
+}
+
+.session-event-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+    line-height: 2;
+    font-family: 'Barlow Condensed', sans-serif;
+    transition: color 0.2s;
+    word-break: break-word;
+    cursor: pointer;
+}
+
+.session-event-name:hover {
+    color: var(--off-white);
+}
+
+.session-event-name.active-event {
+    color: var(--white);
+    border-left: 2px solid var(--red);
+    padding-left: 8px;
+}
+
 .event-sub-title {
     display: block;
     font-size: 13px;
