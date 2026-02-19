@@ -302,6 +302,12 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
     photos.forEach(photo => {
         grid.appendChild(createPhotoItem(photo, observer));
     });
+    const remaining = PHOTOS_PER_SESSION_PAGE - totalPhotos;
+    for (let i = 0; i < remaining; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'photo-item photo-item-empty';
+        grid.appendChild(empty);
+    }
     wrapper.appendChild(grid);
     return wrapper;
 }
@@ -310,18 +316,26 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
     if (!sessionPhotoPages[sessionKey]) sessionPhotoPages[sessionKey] = 1;
 
     function renderPage() {
-        wrapper.innerHTML = '';
-        const pg = sessionPhotoPages[sessionKey];
-        const start = (pg - 1) * PHOTOS_PER_SESSION_PAGE;
-        const end = Math.min(start + PHOTOS_PER_SESSION_PAGE, totalPhotos);
-        const pagePhotos = photos.slice(start, end);
+    wrapper.innerHTML = '';
+    const pg = sessionPhotoPages[sessionKey];
+    const start = (pg - 1) * PHOTOS_PER_SESSION_PAGE;
+    const end = Math.min(start + PHOTOS_PER_SESSION_PAGE, totalPhotos);
+    const pagePhotos = photos.slice(start, end);
 
-        const grid = document.createElement('div');
-        grid.className = 'photo-wall-inner';
-        pagePhotos.forEach(photo => {
-            grid.appendChild(createPhotoItem(photo, observer));
-        });
-        wrapper.appendChild(grid);
+    const grid = document.createElement('div');
+    grid.className = 'photo-wall-inner';
+    pagePhotos.forEach(photo => {
+        grid.appendChild(createPhotoItem(photo, observer));
+    });
+
+    const remaining = PHOTOS_PER_SESSION_PAGE - pagePhotos.length;
+    for (let i = 0; i < remaining; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'photo-item photo-item-empty';
+        grid.appendChild(empty);
+    }
+
+    wrapper.appendChild(grid);
 
         const pager = document.createElement('div');
         pager.className = 'session-pagination';
