@@ -34,6 +34,7 @@ const FULL_MONTHS = [
     "JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"
 ];
 
+const PHOTOS_PER_SESSION_PAGE = 10;
 const OWNER_PASSWORD = "HAUS";
 
 const firebaseConfig = {
@@ -49,6 +50,8 @@ const firebaseConfig = {
 
 let database;
 let archiveRef;
+
+const sessionPhotoPages = {};
 
 try {
     firebase.initializeApp(firebaseConfig);
@@ -77,74 +80,31 @@ function getSessionKey(photo) {
 
 function loadArchiveFromFirebase(callback) {
     if (!archiveRef) {
-        console.warn("Firebase not available - using local data only");
         callback();
         return;
     }
-
     archiveRef.once('value')
         .then((snapshot) => {
             const firebaseData = snapshot.val() || {};
-
-            console.log("Firebase raw keys:", Object.keys(firebaseData));
-console.log("Firebase raw data:", JSON.stringify(firebaseData, null, 2));
-
             Object.keys(firebaseData).forEach(eraKey => {
-                const normalizedKey = eraKey.toLowerCase().replace(/\s+/g, '-');
-
-                if (!window.gagaArchive[normalizedKey]) {
-                    window.gagaArchive[normalizedKey] = {
-                        title: eraKey.toUpperCase(),
-                        photos: []
-                    };
-                }
-
-const rawFbPhotos = firebaseData[eraKey]?.photos || {};
-const fbPhotos = Array.isArray(rawFbPhotos)
-    ? rawFbPhotos
-    : Object.values(rawFbPhotos);
-
-                let localPhotos = Array.isArray(window.gagaArchive[normalizedKey].photos) 
-                    ? window.gagaArchive[normalizedKey].photos 
-                    : [];
-
-                fbPhotos.forEach(fbPhoto => {
-                    if (fbPhoto && fbPhoto.url) {
-                        const alreadyExists = localPhotos.some(p => p.url === fbPhoto.url);
-                        if (!alreadyExists) {
-                            localPhotos.push(fbPhoto);
-                        }
+                const nk = eraKey.toLowerCase().replace(/\s+/g, '-');
+                if (!window.gagaArchive[nk]) window.gagaArchive[nk] = { title: eraKey.toUpperCase(), photos: [] };
+                const raw = firebaseData[eraKey]?.photos || {};
+                const fbPhotos = Array.isArray(raw) ? raw : Object.values(raw);
+                const localPhotos = window.gagaArchive[nk].photos || [];
+                fbPhotos.forEach(p => {
+                    if (p && p.url && !localPhotos.some(lp => lp.url === p.url)) {
+                        localPhotos.push(p);
                     }
                 });
-
-                window.gagaArchive[normalizedKey].photos = localPhotos;
+                window.gagaArchive[nk].photos = localPhotos;
             });
-
-            console.log("Firebase photos merged successfully");
-
-            if (document.getElementById('exhibition-room')?.style.display !== 'none') {
-                renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage);
-            }
-
-            callback(); 
-        })
-        .catch((error) => {
-            console.error("Failed to load from Firebase:", error);
-            alert("Couldn't load shared photos. Using local eras only.");
             callback();
-        });
+        })
+        .catch(() => callback());
 }
-
 function init() {
-    console.log("=== PAGE INIT START ===");
-    console.log("Local eras before Firebase:", Object.keys(window.gagaArchive || {}));
-    console.log("Photographers before Firebase:", Object.keys(window.gagaPhotogs || {}).length);
-
     loadArchiveFromFirebase(() => {
-        console.log("=== AFTER FIREBASE MERGE ===");
-        console.log("Eras after merge:", Object.keys(window.gagaArchive || {}));
-        console.log("Total photos in artpop:", window.gagaArchive["artpop"]?.photos?.length || 0);
-
         filterEras('all');
         renderSidebar();
         if (isOwner) renderOwnerUI();
@@ -162,18 +122,21 @@ function init() {
 }
 
 function showLogin() {
-    const pass = prompt("ENTER OWNER ACCESS KEY:");
-    if (pass === OWNER_PASSWORD) {
-        isOwner = true;
-        localStorage.setItem('haus_owner_mode', 'true');
-        alert("ACCESS GRANTED.");
-        location.reload();
-    } else {
-        alert("UNAUTHORIZED");
-    }
+    const email = prompt("EMAIL:");
+    if (!email) return;
+    const pass = prompt("PASSWORD:");
+    firebase.auth().signInWithEmailAndPassword(email, pass)
+        .then(() => {
+            isOwner = true;
+            localStorage.setItem('haus_owner_mode', 'true');
+            alert("ACCESS GRANTED.");
+            location.reload();
+        })
+        .catch(() => alert("UNAUTHORIZED"));
 }
 
 function logout() {
+    firebase.auth().signOut().catch(() => {});
     localStorage.removeItem('haus_owner_mode');
     location.reload();
 }
@@ -198,8 +161,8 @@ function openAddModal() {
     const modal = document.createElement('div');
     modal.id = "owner-modal";
     modal.style = `position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#000; border:1px solid #333; padding:30px; z-index:9999; display:flex; flex-direction:column; gap:15px; width:350px; color:#fff; box-shadow: 0 0 30px rgba(0,0,0,1);`;
-    
-    const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k => 
+
+    const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
         `<option value="${k}">${window.gagaPhotogs[k].name}</option>`
     ).join('');
 
@@ -216,7 +179,7 @@ function openAddModal() {
         </select>
         <label style="font-size:9px; opacity:0.6;">ERA CATEGORY</label>
         <select id="m-era" style="background:#111; border:1px solid #333; color:#fff; padding:10px;">
-            ${Object.keys(window.gagaArchive || {}).map(k => 
+            ${Object.keys(window.gagaArchive || {}).map(k =>
                 `<option value="${k}">${window.gagaArchive[k].title || k.toUpperCase()}</option>`
             ).join('')}
         </select>
@@ -235,10 +198,9 @@ function saveNewPhoto() {
     const eraKey = document.getElementById('m-era').value;
 
     if (!url || !year || !eraKey) return alert("URL, Year, and Era are required.");
-if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
+    if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
 
     const normalizedEraKey = eraKey.toLowerCase().replace(/\s+/g, '-');
-
     const newPhoto = { url, desc, event, year, photogKey };
 
     if (archiveRef) {
@@ -247,7 +209,7 @@ if (!url.startsWith('http')) return alert("Please enter a valid image URL starti
             .then(() => {
                 alert("Photo saved to shared archive!");
                 document.getElementById('owner-modal').remove();
-                location.reload();  
+                location.reload();
             })
             .catch(err => {
                 console.error("Save failed:", err);
@@ -296,7 +258,6 @@ function filterPhotographers() {
     const buttons = photogContainer.getElementsByTagName('button');
     for (let i = 0; i < buttons.length; i++) {
         const txtValue = buttons[i].textContent || buttons[i].innerText;
-        if (txtValue === "ALL") { buttons[i].style.display = ""; continue; }
         buttons[i].style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
     }
 }
@@ -318,10 +279,7 @@ function setupSearchKey() {
                     return;
                 }
                 const buttons = Array.from(document.querySelectorAll('#photog-filters button'));
-                const firstMatch = buttons.find(btn =>
-                    btn.style.display !== 'none' &&
-                    btn.innerText.trim().toUpperCase() !== 'ALL'
-                );
+                const firstMatch = buttons.find(btn => btn.style.display !== 'none');
                 if (firstMatch) {
                     firstMatch.click();
                     newSearchBar.value = "";
@@ -330,6 +288,102 @@ function setupSearchKey() {
             }
         });
     }
+}
+
+function buildSessionPhotoGrid(sessionKey, photos, observer) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'session-photos-wrapper';
+
+    const totalPhotos = photos.length;
+
+    if (totalPhotos <= PHOTOS_PER_SESSION_PAGE) {
+    const grid = document.createElement('div');
+    grid.className = 'photo-wall-inner';
+    photos.forEach(photo => {
+        grid.appendChild(createPhotoItem(photo, observer));
+    });
+    wrapper.appendChild(grid);
+    return wrapper;
+}
+
+    const totalSessionPages = Math.ceil(totalPhotos / PHOTOS_PER_SESSION_PAGE);
+    if (!sessionPhotoPages[sessionKey]) sessionPhotoPages[sessionKey] = 1;
+
+    function renderPage() {
+        wrapper.innerHTML = '';
+        const pg = sessionPhotoPages[sessionKey];
+        const start = (pg - 1) * PHOTOS_PER_SESSION_PAGE;
+        const end = Math.min(start + PHOTOS_PER_SESSION_PAGE, totalPhotos);
+        const pagePhotos = photos.slice(start, end);
+
+        const grid = document.createElement('div');
+        grid.className = 'photo-wall-inner';
+        pagePhotos.forEach(photo => {
+            grid.appendChild(createPhotoItem(photo, observer));
+        });
+        wrapper.appendChild(grid);
+
+        const pager = document.createElement('div');
+        pager.className = 'session-pagination';
+
+        if (pg > 1) {
+            const prev = document.createElement('span');
+            prev.textContent = '← PREV';
+            prev.onclick = () => { sessionPhotoPages[sessionKey] = pg - 1; renderPage(); };
+            pager.appendChild(prev);
+        }
+
+        for (let p = 1; p <= totalSessionPages; p++) {
+            const link = document.createElement('span');
+            link.textContent = p;
+            if (p === pg) {
+                link.style.fontWeight = 'bold';
+                link.style.textDecoration = 'underline';
+                link.style.color = '#000';
+            }
+            link.onclick = ((page) => () => { sessionPhotoPages[sessionKey] = page; renderPage(); })(p);
+            pager.appendChild(link);
+        }
+
+        if (pg < totalSessionPages) {
+            const next = document.createElement('span');
+            next.textContent = 'NEXT →';
+            next.onclick = () => { sessionPhotoPages[sessionKey] = pg + 1; renderPage(); };
+            pager.appendChild(next);
+        }
+
+        wrapper.appendChild(pager);
+    }
+
+    renderPage();
+    return wrapper;
+}
+
+function createPhotoItem(photo, observer) {
+    const photoDiv = document.createElement('div');
+    photoDiv.className = 'photo-item';
+
+    const photogDisplay = (photo.photogKey === "NONE" || !window.gagaPhotogs[photo.photogKey])
+        ? ""
+        : window.gagaPhotogs[photo.photogKey].name.toUpperCase();
+
+    const descLabel = photo.desc ? photo.desc.toUpperCase() : '';
+
+    photoDiv.innerHTML = `
+        <img data-src="${photo.url}" loading="lazy"
+             onclick="openLightbox(${photo.globalIndex})"
+             style="opacity:0; transition: opacity 0.3s;">
+        <div class="photo-info">
+            <span class="info-photog" onclick="handlePhotogClick(event, '${photo.photogKey}')">
+                ${photogDisplay}
+            </span>
+            ${descLabel ? `<div class="info-event">${descLabel}</div>` : ''}
+        </div>`;
+
+    const img = photoDiv.querySelector('img');
+    img.onload = () => img.style.opacity = '1';
+    observer.observe(img);
+    return photoDiv;
 }
 
 function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth = null, page = 1) {
@@ -351,18 +405,20 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         }
         const eraTitle = window.gagaArchive[currentEraKey]?.title || "UNKNOWN";
         const photogName = window.gagaPhotogs[filterKey]?.name;
-        if (currentPhotogFilter === 'all' || !photogName) {
-            titleEl.innerText = eraTitle;
-        } else {
-            titleEl.innerText = `${eraTitle} — ${photogName.toUpperCase()}`;
-        }
+        titleEl.innerText = (currentPhotogFilter === 'all' || !photogName)
+            ? eraTitle
+            : `${eraTitle} — ${photogName.toUpperCase()}`;
     } else {
+        // Full archive — collect from ALL eras
         Object.keys(window.gagaArchive || {}).forEach(eraKey => {
             let photos = window.gagaArchive[eraKey]?.photos || [];
+            if (!Array.isArray(photos)) photos = Object.values(photos);
             if (currentPhotogFilter !== 'all') photos = photos.filter(p => p.photogKey === currentPhotogFilter);
             rawPhotos = [...rawPhotos, ...photos];
         });
-        titleEl.innerText = (filterKey === 'all') ? "FULL ARCHIVE" : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase() || "UNKNOWN"}`;
+        titleEl.innerText = (filterKey === 'all')
+            ? "FULL ARCHIVE"
+            : `ALL WORK BY ${window.gagaPhotogs[filterKey]?.name.toUpperCase() || "UNKNOWN"}`;
     }
 
     if (rawPhotos.length === 0) {
@@ -387,8 +443,8 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
 
     const yearGroups = {};
     rawPhotos.forEach((photo, index) => {
-    const year = photo.year;
-    if (!year) return;
+        const year = photo.year;
+        if (!year) return;
         if (!yearGroups[year]) yearGroups[year] = [];
         yearGroups[year].push({ ...photo, globalIndex: index });
     });
@@ -522,34 +578,8 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         `;
 
         const grid = sessionBox.querySelector('.photo-wall');
-
-        photos.forEach(photo => {
-            const photoDiv = document.createElement('div');
-            photoDiv.className = 'photo-item';
-
-            const photogDisplay = (photo.photogKey === "NONE" || !window.gagaPhotogs[photo.photogKey])
-                ? ""
-                : window.gagaPhotogs[photo.photogKey].name.toUpperCase();
-
-            const descLabel = photo.desc ? photo.desc.toUpperCase() : '';
-
-            photoDiv.innerHTML = `
-                <img data-src="${photo.url}" loading="lazy"
-                     onclick="openLightbox(${photo.globalIndex})"
-                     style="opacity:0; transition: opacity 0.3s;">
-                <div class="photo-info">
-                    <span class="info-photog"
-                          onclick="handlePhotogClick(event, '${photo.photogKey}')">
-                        ${photogDisplay}
-                    </span>
-                    ${descLabel ? `<div class="info-event">${descLabel}</div>` : ''}
-                </div>`;
-
-            const img = photoDiv.querySelector('img');
-            img.onload = () => img.style.opacity = '1';
-            grid.appendChild(photoDiv);
-            observer.observe(img);
-        });
+        const photoGrid = buildSessionPhotoGrid(sessionKey, photos, observer);
+        grid.appendChild(photoGrid);
 
         display.appendChild(sessionBox);
     });
@@ -601,7 +631,16 @@ function filterEras(category) {
         const allLink = document.createElement('span');
         allLink.className = 'nav-item';
         allLink.innerText = "ALL";
-        allLink.onclick = () => { currentEraKey = ""; renderPhotos('all'); };
+        allLink.onclick = () => {
+            currentEraKey = "";
+            currentPage = 1;
+            currentTargetMonth = null;
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('exhibition-room').style.display = 'block';
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.style.display = 'flex';
+            renderPhotos('all');
+        };
         subNav.appendChild(allLink);
     }
 
@@ -696,7 +735,7 @@ function updateLightbox() {
     document.getElementById('lightbox-img').src = d.url;
 
     const delBtn = isOwner
-        ? `<button onclick="deletePhoto('${d.url}')" style="background:#ff4444; color:white; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px;">Delete Permanent</button>`
+        ? `<button onclick="deletePhoto('${d.url}')" style="background:#ff4444; color:white; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px;">DELETE PERMANENT</button>`
         : '';
 
     document.getElementById('lightbox-caption').innerHTML = `
