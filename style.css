@@ -461,7 +461,6 @@ body::after {
     color: var(--off-white);
 }
 
-/* Right photo area */
 .photo-wall {
     flex: 1;
     min-width: 0;
@@ -475,7 +474,7 @@ body::after {
 .photo-wall-inner {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 320px);
+    grid-template-rows: repeat(2, 200px);
     gap: 1px;
     padding: 1px;
     width: 100%;
@@ -514,9 +513,9 @@ body::after {
 }
 
 .photo-info {
-    padding: 7px 10px;
+    padding: 8px 10px;
     text-align: center;
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -526,7 +525,7 @@ body::after {
 }
 
 .info-photog {
-    color: var(--off-white);
+    color: var(--white);
     cursor: pointer;
     display: block;
     transition: color 0.15s;
@@ -537,11 +536,11 @@ body::after {
 }
 
 .info-event {
-    font-size: 8px;
-    color: var(--gray-light);
+    font-size: 10px;
+    color: #888888;
     letter-spacing: 1px;
     text-transform: uppercase;
-    margin-top: 2px;
+    margin-top: 3px;
     font-weight: 400;
 }
 
@@ -551,20 +550,115 @@ body::after {
     pointer-events: none;
 }
 
+.owner-edit-overlay {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(255, 170, 0, 0.92);
+    color: #000;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: 'Barlow Condensed', sans-serif;
+    padding: 4px 8px;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.photo-item:hover .owner-edit-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.drag-handle {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    cursor: grab;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
+}
+
+.photo-item:hover .drag-handle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.photo-item.dragging {
+    opacity: 0.35;
+    outline: 2px dashed rgba(255,170,0,0.6);
+    cursor: grabbing;
+}
+
+.photo-item.drag-over {
+    outline: 2px solid #ffaa00;
+    background: rgba(255,170,0,0.08);
+}
+
+/* Unsaved order bar */
+.drag-save-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #111;
+    border-top: 1px solid rgba(255,170,0,0.4);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    color: #ffaa00;
+}
+
+.drag-save-bar span {
+    flex: 1;
+}
+
+.drag-save-bar button {
+    background: #ffaa00;
+    color: #000;
+    border: none;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Barlow Condensed', sans-serif;
+    transition: background 0.2s;
+}
+
+.drag-save-bar button:hover {
+    background: #fff;
+}
+
 .session-pagination {
-    text-align: center;
-    padding: 12px 0 14px;
+    text-align: left;
+    padding: 10px 16px;
     font-size: 9px;
     letter-spacing: 3px;
     color: var(--gray-light);
     border-top: 1px solid var(--border);
     background: var(--black);
     font-family: 'Space Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .session-pagination span {
     cursor: pointer;
-    margin: 0 10px;
+    margin: 0 6px 0 0;
     transition: color 0.15s;
     text-transform: uppercase;
 }
@@ -837,7 +931,7 @@ body::after {
 
     .photo-wall-inner {
         grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(5, 180px);
+        grid-template-rows: repeat(5, 130px); 
         gap: 1px;
         padding: 1px;
     }
@@ -894,7 +988,7 @@ body::after {
 @media (max-width: 480px) {
     .photo-wall-inner {
         grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(5, 150px);
+        grid-template-rows: repeat(5, 110px); 
     }
 
     .global-header h1 {
