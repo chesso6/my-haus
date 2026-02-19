@@ -1179,4 +1179,44 @@ function fixYearMonthBar() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function showContentWarning() {
+    if (localStorage.getItem('haus_cw_accepted')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'content-warning';
+    overlay.innerHTML = `
+        <div class="cw-box">
+            <div class="cw-title">MY HAUS</div>
+            <div class="cw-tags">
+                <span class="cw-tag">POLITICAL CONTENT</span>
+                <span class="cw-tag">MATURE THEMES</span>
+                <span class="cw-tag">R-18</span>
+            </div>
+            <div class="cw-warning">
+                This archive contains photography that may include<br>
+                mature, provocative, or politically charged content.<br>
+                By continuing, you confirm you are 18 or older<br>
+                and are not easily offended.
+            </div>
+            <div class="cw-sub">If you are sensitive about this kind of content,<br>this site is not for you.</div>
+            <button class="cw-btn" onclick="dismissWarning()">I UNDERSTAND — ENTER</button>
+            <button class="cw-exit" onclick="window.history.back()">LEAVE</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function dismissWarning() {
+    localStorage.setItem('haus_cw_accepted', 'true');
+    const overlay = document.getElementById('content-warning');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.4s';
+        setTimeout(() => overlay.remove(), 400);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    showContentWarning();
+    init();
+});
