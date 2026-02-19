@@ -923,8 +923,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
                 })
         )];
 
-        const eventsHTML = uniqueEvents.map(e => `<span class="event-sub-title">${e}</span>`).join('');
-
         const sessionBox = document.createElement('div');
         sessionBox.className = 'event-session-box';
 
@@ -932,15 +930,51 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             <div class="session-layout">
                 <div class="session-label">
                     <div class="session-date">${sessionKey}</div>
-                    ${eventsHTML}
+                    <div class="event-sub-titles"></div>
                 </div>
                 <div class="photo-wall"></div>
             </div>
         `;
 
-        const grid = sessionBox.querySelector('.photo-wall');
-        const photoGrid = buildSessionPhotoGrid(sessionKey, photos, observer);
-        grid.appendChild(photoGrid);
+        const subTitlesEl = sessionBox.querySelector('.event-sub-titles');
+        const photoWall = sessionBox.querySelector('.photo-wall');
+
+        let activeEvent = null;
+
+        function renderSessionGrid(eventFilter) {
+            const filtered = eventFilter
+                ? photos.filter(p => {
+                    if (!p.event) return false;
+                    const parts = p.event.split(':');
+                    const label = parts.length > 1 ? parts.slice(1).join(':').trim().toUpperCase() : p.event.toUpperCase();
+                    return label === eventFilter;
+                })
+                : photos;
+            photoWall.innerHTML = '';
+            photoWall.appendChild(buildSessionPhotoGrid(sessionKey + (eventFilter || ''), filtered, observer));
+        }
+
+        uniqueEvents.forEach(e => {
+            const span = document.createElement('span');
+            span.className = 'event-sub-title event-sub-title-link';
+            span.textContent = e;
+            span.dataset.event = e;
+            span.onclick = () => {
+                if (activeEvent === e) {
+                    activeEvent = null;
+                    subTitlesEl.querySelectorAll('.event-sub-title').forEach(s => s.classList.remove('active-event'));
+                    renderSessionGrid(null);
+                } else {
+                    activeEvent = e;
+                    subTitlesEl.querySelectorAll('.event-sub-title').forEach(s => s.classList.remove('active-event'));
+                    span.classList.add('active-event');
+                    renderSessionGrid(e);
+                }
+            };
+            subTitlesEl.appendChild(span);
+        });
+
+        renderSessionGrid(null);
 
         display.appendChild(sessionBox);
     });
