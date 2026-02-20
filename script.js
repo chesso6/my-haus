@@ -103,6 +103,32 @@ function loadArchiveFromFirebase(callback) {
         .catch(() => callback());
 }
 
+function showLobby() {
+    localStorage.removeItem('haus_current_era');
+    currentEraKey = "";
+    currentPhotogFilter = 'all';
+    currentPage = 1;
+    currentTargetMonth = null;
+    currentTargetYear = null;
+    document.getElementById('lobby').style.display = 'block';
+    document.getElementById('exhibition-room').style.display = 'none';
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.style.display = 'none';
+}
+
+function openEra(key) {
+    currentEraKey = key;
+    currentPage = 1;
+    currentTargetMonth = null;
+    currentTargetYear = null;
+    localStorage.setItem('haus_current_era', key);
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('exhibition-room').style.display = 'block';
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.style.display = 'flex';
+    renderPhotos();
+}
+
 function init() {
     loadArchiveFromFirebase(() => {
         filterEras('all');
@@ -1028,17 +1054,8 @@ function filterEras(category) {
     if (isOwner) renderOwnerUI();
 }
 
-function openEra(key) {
-    currentEraKey = key;
-    currentPage = 1;
-    currentTargetMonth = null;
-    localStorage.setItem('haus_current_era', key);
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('exhibition-room').style.display = 'block';
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) { sidebar.style.display = 'flex'; }
-    renderPhotos();
-}
+
+
 
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
@@ -1078,18 +1095,11 @@ function handlePhotogClick(event, photogKey) {
     event.stopPropagation();
     currentEraKey = "";
     currentPage = 1;
-    renderPhotos(photogKey);
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('exhibition-room').style.display = 'block';
-    updateSubNavHighlight("");
-}
-
-function showLobby() {
-    localStorage.removeItem('haus_current_era');
-    document.getElementById('lobby').style.display = 'block';
-    document.getElementById('exhibition-room').style.display = 'none';
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) { sidebar.style.display = 'none'; }
+    if (sidebar) sidebar.style.display = 'flex';
+    renderPhotos(photogKey);
 }
 
 function updateSubNavHighlight(activeKey) {
@@ -1180,7 +1190,7 @@ function fixYearMonthBar() {
 }
 
 function showContentWarning() {
-    if (localStorage.getItem('haus_cw_accepted')) return;
+    if (sessionStorage.getItem('haus_cw_accepted')) return;
 
     const overlay = document.createElement('div');
     overlay.id = 'content-warning';
@@ -1207,7 +1217,7 @@ function showContentWarning() {
 }
 
 function dismissWarning() {
-    localStorage.setItem('haus_cw_accepted', 'true');
+    sessionStorage.setItem('haus_cw_accepted', 'true');
     const overlay = document.getElementById('content-warning');
     if (overlay) {
         overlay.style.opacity = '0';
