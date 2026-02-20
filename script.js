@@ -103,106 +103,18 @@ function loadArchiveFromFirebase(callback) {
         .catch(() => callback());
 }
 
-function showLobby() {
-    currentEraKey = "";
-    currentPhotogFilter = 'all';
-    currentPage = 1;
-    currentTargetMonth = null;
-    currentTargetYear = null;
-    document.getElementById('lobby').style.display = 'block';
-    document.getElementById('exhibition-room').style.display = 'none';
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.style.display = 'none';
-    localStorage.removeItem('haus_current_era');
-    navigate('/');
-}
-
-function navigate(path) {
-    const current = decodeURIComponent(window.location.hash.slice(1));
-    if (current !== path) {
-        window.location.hash = encodeURIComponent(path);
-    }
-}
-
-function parseRoute(hash) {
-    const path = decodeURIComponent(hash.replace(/^#\/?/, ''));
-    if (!path || path === '/') return { view: 'lobby' };
-    const parts = path.split('/').filter(Boolean);
-    if (parts[0] === 'photographer' && parts[1]) return { view: 'photographer', key: decodeURIComponent(parts[1]) };
-    if (parts[0] === 'all') return { view: 'all' };
-    if (window.gagaArchive?.[parts[0]]) return { view: 'era', key: parts[0] };
-    return { view: 'lobby' };
-}
-
-function handleRoute() {
-    const route = parseRoute(window.location.hash);
-
-    if (route.view === 'lobby') {
-        currentEraKey = "";
-        currentPhotogFilter = 'all';
-        currentPage = 1;
-        currentTargetMonth = null;
-        currentTargetYear = null;
-        document.getElementById('lobby').style.display = 'block';
-        document.getElementById('exhibition-room').style.display = 'none';
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.style.display = 'none';
-        filterEras('all');
-        document.title = 'MY HAUS | ARCHIVE';
-        return;
-    }
-
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('exhibition-room').style.display = 'block';
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.style.display = 'flex';
-
-    if (route.view === 'era') {
-        currentEraKey = route.key;
-        currentPhotogFilter = 'all';
-        currentPage = 1;
-        currentTargetMonth = null;
-        currentTargetYear = null;
-        filterEras('all');
-        renderPhotos();
-        const eraTitle = window.gagaArchive[route.key]?.title || route.key.toUpperCase();
-        document.title = `${eraTitle} | MY HAUS`;
-    } else if (route.view === 'all') {
-        currentEraKey = "";
-        currentPhotogFilter = 'all';
-        currentPage = 1;
-        currentTargetMonth = null;
-        currentTargetYear = null;
-        filterEras('all');
-        renderPhotos('all');
-        document.title = 'ALL PHOTOGRAPHY | MY HAUS';
-    } else if (route.view === 'photographer') {
-        currentEraKey = "";
-        currentPhotogFilter = route.key;
-        currentPage = 1;
-        currentTargetMonth = null;
-        currentTargetYear = null;
-        filterEras('all');
-        renderPhotos(route.key);
-        const photogName = window.gagaPhotogs?.[route.key]?.name || route.key;
-        document.title = `${photogName.toUpperCase()} | MY HAUS`;
-    }
-}
-
-function openEra(key) {
-    navigate('/' + key);
-}
-
 function init() {
     loadArchiveFromFirebase(() => {
         filterEras('all');
         renderSidebar();
         if (isOwner) renderOwnerUI();
         setupSearchKey();
-        handleRoute();
-    });
 
-    window.addEventListener('hashchange', handleRoute);
+        const savedEra = localStorage.getItem('haus_current_era');
+        if (savedEra && window.gagaArchive[savedEra]) {
+            openEra(savedEra);
+        }
+    });
 
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'l' && !isOwner) showLogin();
@@ -1077,7 +989,16 @@ function filterEras(category) {
         const allLink = document.createElement('span');
         allLink.className = 'nav-item';
         allLink.innerText = "ALL";
-        allLink.onclick = () => navigate('/all');
+        allLink.onclick = () => {
+            currentEraKey = "";
+            currentPage = 1;
+            currentTargetMonth = null;
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('exhibition-room').style.display = 'block';
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.style.display = 'flex';
+            renderPhotos('all');
+        };
         subNav.appendChild(allLink);
     }
 
@@ -1107,8 +1028,17 @@ function filterEras(category) {
     if (isOwner) renderOwnerUI();
 }
 
-
-
+function openEra(key) {
+    currentEraKey = key;
+    currentPage = 1;
+    currentTargetMonth = null;
+    localStorage.setItem('haus_current_era', key);
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('exhibition-room').style.display = 'block';
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) { sidebar.style.display = 'flex'; }
+    renderPhotos();
+}
 
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
@@ -1131,14 +1061,14 @@ function renderSidebar() {
     Object.keys(window.gagaPhotogs || {}).forEach(pKey => {
         const btn = document.createElement('button');
         btn.innerText = window.gagaPhotogs[pKey].name.toUpperCase();
-        btn.onclick = () => navigate('/photographer/' + encodeURIComponent(pKey));
+        btn.onclick = () => { currentEraKey = ""; renderPhotos(pKey); };
         nav.appendChild(btn);
     });
 
     [...customNames].sort().forEach(name => {
         const btn = document.createElement('button');
         btn.innerText = name.toUpperCase();
-        btn.onclick = () => navigate('/photographer/' + encodeURIComponent(name));
+        btn.onclick = () => { currentEraKey = ""; renderPhotos(name); };
         nav.appendChild(btn);
     });
 }
@@ -1146,7 +1076,20 @@ function renderSidebar() {
 function handlePhotogClick(event, photogKey) {
     if (!photogKey || photogKey === "NONE") return;
     event.stopPropagation();
-    navigate('/photographer/' + encodeURIComponent(photogKey));
+    currentEraKey = "";
+    currentPage = 1;
+    renderPhotos(photogKey);
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('exhibition-room').style.display = 'block';
+    updateSubNavHighlight("");
+}
+
+function showLobby() {
+    localStorage.removeItem('haus_current_era');
+    document.getElementById('lobby').style.display = 'block';
+    document.getElementById('exhibition-room').style.display = 'none';
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) { sidebar.style.display = 'none'; }
 }
 
 function updateSubNavHighlight(activeKey) {
