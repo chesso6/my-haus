@@ -128,9 +128,9 @@ function parseRoute(hash) {
     const path = decodeURIComponent(hash.replace(/^#\/?/, ''));
     if (!path || path === '/') return { view: 'lobby' };
     const parts = path.split('/').filter(Boolean);
-    if (parts[0] === 'era' && parts[1]) return { view: 'era', key: parts[1] };
     if (parts[0] === 'photographer' && parts[1]) return { view: 'photographer', key: decodeURIComponent(parts[1]) };
     if (parts[0] === 'all') return { view: 'all' };
+    if (window.gagaArchive?.[parts[0]]) return { view: 'era', key: parts[0] };
     return { view: 'lobby' };
 }
 
@@ -190,11 +190,7 @@ function handleRoute() {
 }
 
 function openEra(key) {
-    currentEraKey = key;
-    currentPage = 1;
-    currentTargetMonth = null;
-    currentTargetYear = null;
-    navigate('/era/' + key);
+    navigate('/' + key);
 }
 
 function init() {
@@ -1111,17 +1107,8 @@ function filterEras(category) {
     if (isOwner) renderOwnerUI();
 }
 
-function openEra(key) {
-    currentEraKey = key;
-    currentPage = 1;
-    currentTargetMonth = null;
-    localStorage.setItem('haus_current_era', key);
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('exhibition-room').style.display = 'block';
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) { sidebar.style.display = 'flex'; }
-    renderPhotos();
-}
+
+
 
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
