@@ -588,6 +588,10 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
         }
         if (isOwner) makeDraggable(grid, pagePhotosRef);
         wrapper.appendChild(grid);
+        const spacer = document.createElement('div');
+        spacer.className = 'session-pagination session-pagination-spacer';
+        spacer.innerHTML = '&nbsp;';
+        wrapper.appendChild(spacer);
         return wrapper;
     }
 
@@ -943,9 +947,11 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         const eventGroups = {};
         const eventOrder = [];
         photos.forEach(p => {
-            const raw = (p.event || p.desc || '').toUpperCase().trim();
-            const parts = raw.split(':');
-            const eventName = parts.length > 1 ? parts.slice(1).join(':').trim() : raw;
+            const raw = (p.event || p.desc || '').trim();
+            const colonIdx = raw.indexOf(':');
+            const eventName = colonIdx !== -1
+                ? raw.slice(colonIdx + 1).trim().toUpperCase()
+                : raw.toUpperCase();
             if (!eventGroups[eventName]) {
                 eventGroups[eventName] = [];
                 eventOrder.push(eventName);
