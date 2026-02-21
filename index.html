@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAUS | ARCHIVE</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="https://i.pinimg.com/736x/09/2d/a5/092da587bbddfd04729ed3ef061d7444.jpg">
+
 </head>
 <body>
 
@@ -23,13 +25,13 @@
                     <div class="header-content">
                         <h1>MY HAUS</h1>
                         <p>PHOTOGRAPHY ANTHOLOGY</p>
+                        <button id="header-login-btn" onclick="showLoginModal()" style="display:none;">🔒</button>
                         <div class="category-nav">
                             <span class="category-item" onclick="filterEras('studio')">Studio Albums</span>
                             <span class="category-item" onclick="filterEras('collab')">Collaborative</span>
                             <span class="category-item active-category" onclick="filterEras('all')">All</span>
                         </div>
                     </div>
-                    <button id="header-login-btn" onclick="showLoginModal()" title="Staff Login">⊹</button>
                 </header>
                 <div class="era-grid" id="era-menu"></div>
             </section>
