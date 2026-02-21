@@ -46,18 +46,24 @@
         </main>
     </div>
 
-    <div id="lightbox" class="lightbox" style="display:none;" onclick="closeLightbox()">
+    <div id="lightbox" class="lightbox" style="display:none;">
+    <div class="lightbox-top-bar">
         <button class="close-btn" onclick="closeLightbox()">×</button>
-        <button class="lb-nav lb-prev" onclick="event.stopPropagation(); changeImage(-1)">«</button>
-        <button class="lb-nav lb-next" onclick="event.stopPropagation(); changeImage(1)">»</button>
-        <div class="lightbox-content" onclick="event.stopPropagation()">
-            <img id="lightbox-img" src="">
-            <div class="lightbox-footer">
-                <div id="lightbox-caption" class="lightbox-caption"></div>
-                <button class="dl-action-btn" onclick="downloadImage()">DOWNLOAD IMAGE</button>
-            </div>
+    </div>
+
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+        <img id="lightbox-img" src="">
+        
+        <div id="lightbox-thumbnails" class="lb-thumbs"></div>
+        
+        <div class="lightbox-footer">
+            <div id="lightbox-caption" class="lightbox-caption"></div>
         </div>
     </div>
+
+    <button class="lb-nav lb-prev" onclick="event.stopPropagation(); changeImage(-1)">‹</button>
+    <button class="lb-nav lb-next" onclick="event.stopPropagation(); changeImage(1)">›</button>
+</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
