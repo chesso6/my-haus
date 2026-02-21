@@ -1,6 +1,6 @@
-let isOwner = localStorage.getItem('haus_owner_mode') === 'true';
-let isEditor = !isOwner && !!localStorage.getItem('haus_editor_name');
-let editorName = localStorage.getItem('haus_editor_name') || '';
+let isOwner = sessionStorage.getItem('haus_owner_mode') === 'true';
+let isEditor = !isOwner && !!sessionStorage.getItem('haus_editor_name');
+let editorName = sessionStorage.getItem('haus_editor_name') || '';
 
 function canEdit()   { return isOwner || isEditor; }
 function canDelete() { return isOwner; }
@@ -140,6 +140,17 @@ function init() {
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'l' && !isOwner && !isEditor) showLoginModal();
     });
+    updateLoginBtn();
+}
+
+function updateLoginBtn() {
+    const btn = document.getElementById('header-login-btn');
+    if (!btn) return;
+    if (isOwner || isEditor) {
+        btn.style.display = 'none';
+    } else {
+        btn.style.removeProperty('display');
+    }
 }
 
 function showLogin() { showLoginModal(); }
@@ -170,7 +181,7 @@ function showLoginModal() {
                     <label class="om-label">Password</label>
                     <input type="password" id="login-pass" class="om-input" placeholder="••••••••">
                 </div>
-                <div id="login-error" style="font-size:11px;color:#ff4444;letter-spacing:2px;display:none;font-family:'Space Mono',monospace;padding-top:4px;">UNAUTHORIZED</div>
+                <div id="login-error" style="font-size:11px;color:#ff6a00;letter-spacing:2px;display:none;font-family:'Space Mono',monospace;padding-top:4px;">UNAUTHORIZED</div>
             </div>
             <div class="om-footer">
                 <button class="om-btn-cancel" onclick="document.getElementById('login-modal-overlay').remove()">Cancel</button>
@@ -189,8 +200,8 @@ function attemptLogin() {
     const errEl   = document.getElementById('login-error');
 
     if (passVal.toUpperCase() === OWNER_PASSWORD) {
-        localStorage.setItem('haus_owner_mode', 'true');
-        localStorage.removeItem('haus_editor_name');
+        sessionStorage.setItem('haus_owner_mode', 'true');
+        sessionStorage.removeItem('haus_editor_name');
         location.reload();
         return;
     }
@@ -206,8 +217,8 @@ function attemptLogin() {
             e.password === passVal && e.name.toLowerCase() === nameVal.toLowerCase()
         );
         if (match) {
-            localStorage.setItem('haus_editor_name', match.name);
-            localStorage.removeItem('haus_owner_mode');
+            sessionStorage.setItem('haus_editor_name', match.name);
+            sessionStorage.removeItem('haus_owner_mode');
             location.reload();
         } else {
             if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'UNAUTHORIZED'; }
@@ -218,8 +229,8 @@ function attemptLogin() {
 }
 
 function logout() {
-    localStorage.removeItem('haus_owner_mode');
-    localStorage.removeItem('haus_editor_name');
+    sessionStorage.removeItem('haus_owner_mode');
+    sessionStorage.removeItem('haus_editor_name');
     isOwner = false;
     isEditor = false;
     location.reload();
@@ -237,7 +248,7 @@ function renderOwnerUI() {
         <span onclick="openAddModal()" style="color:#00ff88;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">[+] ADD</span>
         <span onclick="openActivityLog()" style="color:#ffaa00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">◈ LOG</span>
         <span onclick="openEditorManager()" style="color:#aaaaff;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">⊞ EDITORS</span>
-        <span onclick="logout()" style="color:#ff4444;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
+        <span onclick="logout()" style="color:#ff6a00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
     subNav.appendChild(panel);
 }
 
@@ -252,7 +263,7 @@ function renderEditorUI() {
     panel.innerHTML = `
         <span style="color:#888;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-family:'Space Mono',monospace;">✦ ${editorName.toUpperCase()}</span>
         <span onclick="openAddModal()" style="color:#00ff88;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">[+] ADD</span>
-        <span onclick="logout()" style="color:#ff4444;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
+        <span onclick="logout()" style="color:#ff6a00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
     subNav.appendChild(panel);
 }
 
@@ -980,7 +991,7 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         pagination.appendChild(prev);
         for (let p = 1; p <= totalPages; p++) {
             const link = document.createElement('span'); link.className = 'pag-num-btn'; link.textContent = p;
-            if (p === currentPage) { link.style.fontWeight = 'bold'; link.style.color = '#fff'; link.style.borderBottom = '1px solid #ff0000'; }
+            if (p === currentPage) { link.style.fontWeight = 'bold'; link.style.color = '#fff'; link.style.borderBottom = '1px solid #ff6a00'; }
             link.onclick = ((pg) => () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, pg); window.scrollTo(0, 0); })(p);
             pagination.appendChild(link);
         }
