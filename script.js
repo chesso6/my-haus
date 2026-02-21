@@ -623,15 +623,19 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
         const pager = document.createElement('div');
         pager.className = 'session-pagination';
 
+        const prev = document.createElement('span');
+        prev.className = 'pag-nav-btn';
+        prev.textContent = '← PREV';
         if (pg > 1) {
-            const prev = document.createElement('span');
-            prev.textContent = '← PREV';
             prev.onclick = () => { sessionPhotoPages[sessionKey] = pg - 1; renderPage(); };
-            pager.appendChild(prev);
+        } else {
+            prev.classList.add('hidden-btn'); 
         }
+        pager.appendChild(prev);
 
         for (let p = 1; p <= totalSessionPages; p++) {
             const link = document.createElement('span');
+            link.className = 'pag-num-btn';
             link.textContent = p;
             if (p === pg) {
                 link.style.fontWeight = 'bold';
@@ -642,12 +646,15 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
             pager.appendChild(link);
         }
 
+        const next = document.createElement('span');
+        next.className = 'pag-nav-btn';
+        next.textContent = 'NEXT →';
         if (pg < totalSessionPages) {
-            const next = document.createElement('span');
-            next.textContent = 'NEXT →';
             next.onclick = () => { sessionPhotoPages[sessionKey] = pg + 1; renderPage(); };
-            pager.appendChild(next);
+        } else {
+            next.classList.add('hidden-btn');
         }
+        pager.appendChild(next);
 
         wrapper.appendChild(pager);
     }
@@ -837,15 +844,19 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         const pagination = document.createElement('div');
         pagination.className = 'pagination';
 
+        const prev = document.createElement('span');
+        prev.className = 'pag-nav-btn';
+        prev.textContent = '← PREV';
         if (currentPage > 1) {
-            const prev = document.createElement('span');
-            prev.textContent = '← PREV';
             prev.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage - 1); window.scrollTo(0, 0); };
-            pagination.appendChild(prev);
+        } else {
+            prev.classList.add('hidden-btn');
         }
+        pagination.appendChild(prev);
 
         for (let p = 1; p <= totalPages; p++) {
             const pageLink = document.createElement('span');
+            pageLink.className = 'pag-num-btn';
             pageLink.textContent = p;
             if (p === currentPage) {
                 pageLink.style.fontWeight = 'bold';
@@ -855,13 +866,16 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             pageLink.onclick = ((pg) => () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, pg); window.scrollTo(0, 0); })(p);
             pagination.appendChild(pageLink);
         }
-
+        
+        const next = document.createElement('span');
+        next.className = 'pag-nav-btn';
+        next.textContent = 'NEXT →';
         if (currentPage < totalPages) {
-            const next = document.createElement('span');
-            next.textContent = 'NEXT →';
             next.onclick = () => { renderPhotos(currentPhotogFilter, null, currentTargetMonth, currentPage + 1); window.scrollTo(0, 0); };
-            pagination.appendChild(next);
+        } else {
+            next.classList.add('hidden-btn');
         }
+        pagination.appendChild(next);
 
         return pagination;
     }
