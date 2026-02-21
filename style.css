@@ -833,22 +833,47 @@ body {
     background: #fff;
 }
 
-.session-pagination {
+.session-pagination,
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px; 
     text-align: center;
     padding: 12px 16px;
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 3px;
     color: var(--gray-light);
-    border-top: 1px solid var(--border);
-    background: var(--black);
     font-family: 'Space Mono', monospace;
 }
 
-.session-pagination span {
+.session-pagination {
+    border-top: 1px solid var(--border);
+    background: var(--black);
+    font-size: 12px;
+}
+
+.session-pagination span,
+.pagination span {
+    margin: 0;
     cursor: pointer;
-    margin: 0 6px 0 0;
     transition: color 0.15s;
     text-transform: uppercase;
+}
+
+.pag-nav-btn {
+    width: 65px; 
+    text-align: center;
+}
+
+.pag-num-btn {
+    width: 20px; 
+    text-align: center;
+}
+
+.hidden-btn {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .session-pagination-spacer {
@@ -858,21 +883,6 @@ body {
 
 .session-pagination span:hover {
     color: var(--red);
-}
-
-.pagination {
-    text-align: center;
-    padding: 5px 0;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--gray-light);
-    font-family: 'Space Mono', monospace;
-}
-
-.pagination span {
-    cursor: pointer;
-    margin: 0 14px 0 0;
-    transition: color 0.15s;
 }
 
 .pagination span:hover {
