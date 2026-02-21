@@ -834,7 +834,7 @@ body {
 }
 
 .session-pagination {
-    text-align: left;
+    text-align: center;
     padding: 10px 16px;
     font-size: 12px;
     letter-spacing: 3px;
@@ -1197,3 +1197,4 @@ body {
         letter-spacing: 4px;
     }
 }
+
