@@ -78,6 +78,17 @@ function getSessionKey(photo) {
     return source.split(' ')[0].toUpperCase() || 'UNKNOWN';
 }
 
+function getSubTitleKey(photo) {
+    if (!photo) return 'UNKNOWN';
+    const raw = (photo.event || photo.desc || '').trim();
+    if (!raw) return 'UNKNOWN';
+    const upper = raw.toUpperCase();
+    const colonIdx = upper.indexOf(':');
+    return colonIdx !== -1 
+        ? upper.slice(colonIdx + 1).trim() 
+        : upper;
+}
+
 function loadArchiveFromFirebase(callback) {
     if (!archiveRef) { callback(); return; }
     archiveRef.once('value')
@@ -1074,9 +1085,6 @@ function filterEras(category) {
     if (isOwner) renderOwnerUI();
 }
 
-
-
-
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
     if (!nav) return;
@@ -1129,37 +1137,78 @@ function updateSubNavHighlight(activeKey) {
     });
 }
 
-function openLightbox(i) {
-    currentIndex = i;
-    updateLightbox();
+let currentGroupPhotos = [];
+let currentGroupIndex = 0;
+
+function openLightbox(globalIndex) {
+    currentIndex = globalIndex;
+    const photo = currentFilteredPhotos[currentIndex];
+    const subKey = getSubTitleKey(photo);
+
+    currentGroupPhotos = currentFilteredPhotos.filter(p => getSubTitleKey(p) === subKey);
+    currentGroupIndex = currentGroupPhotos.findIndex(p => p.url === photo.url);
+
     document.getElementById('lightbox').style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    buildThumbnails();    
+    updateLightboxContent();
 }
 
-function updateLightbox() {
-    const d = currentFilteredPhotos[currentIndex];
+function updateLightboxContent() {
+    const d = currentGroupPhotos[currentGroupIndex];
+
+    document.getElementById('lightbox-img').src = d.url;
+
     const name = (d.photogKey === "NONE" || !d.photogKey)
         ? ""
         : (window.gagaPhotogs[d.photogKey]
             ? window.gagaPhotogs[d.photogKey].name.toUpperCase()
             : d.photogKey.toUpperCase());
 
-    document.getElementById('lightbox-img').src = d.url;
-
     const ownerBtns = isOwner ? `
-        <button onclick="openEditModal('${d.url}')" style="background:#ffaa00; color:#000; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px; letter-spacing:1px;">✎ EDIT</button>
-        <button onclick="deletePhoto('${d.url}')" style="background:#ff4444; color:white; border:none; padding:8px 15px; cursor:pointer; font-size:9px; font-weight:bold; text-transform:uppercase; margin-top:10px;">DELETE</button>
+        <button onclick="openEditModal('${d.url}'); event.stopPropagation();" class="owner-btn edit">✎ EDIT</button>
+        <button onclick="deletePhoto('${d.url}'); event.stopPropagation();" class="owner-btn delete">DELETE</button>
     ` : '';
 
     document.getElementById('lightbox-caption').innerHTML = `
-    <div style="flex:1; min-width:0;">
-        <div class="lb-title">${name} ${d.year ? '(' + d.year + ')' : ''}</div>
-        <div class="lb-desc">${d.event || d.desc || ""}</div>
-    </div>
-    <div style="display:flex; gap:8px; flex-shrink:0; align-items:center;">
-        ${ownerBtns}
-    </div>
-`;
+        <div class="lb-info">
+            <div class="lb-title">${name} ${d.year ? '(' + d.year + ')' : ''}</div>
+            <div class="lb-desc">${d.event || d.desc || ""}</div>
+        </div>
+        <div class="lb-actions">
+            <button class="dl-action-btn" onclick="downloadImage(); event.stopPropagation();">DOWNLOAD</button>
+            ${ownerBtns}
+        </div>
+    `;
+
+    updateActiveThumbnail();
+}
+
+function buildThumbnails() {
+    const container = document.getElementById('lightbox-thumbnails');
+    container.innerHTML = '';
+
+    currentGroupPhotos.forEach((photo, i) => {
+        const thumb = document.createElement('img');
+        thumb.src = photo.url;
+        thumb.loading = "lazy";
+        thumb.className = 'thumb';
+        thumb.onclick = (e) => {
+            e.stopPropagation();
+            currentGroupIndex = i;
+            updateLightboxContent();
+        };
+        container.appendChild(thumb);
+    });
+}
+
+function updateActiveThumbnail() {
+    const thumbs = document.querySelectorAll('#lightbox-thumbnails img');
+    thumbs.forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === currentGroupIndex);
+        if (i === currentGroupIndex) thumb.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+    });
 }
 
 async function downloadImage() {
@@ -1183,8 +1232,9 @@ async function downloadImage() {
 }
 
 function changeImage(step) {
-    currentIndex = (currentIndex + step + currentFilteredPhotos.length) % currentFilteredPhotos.length;
-    updateLightbox();
+    if (currentGroupPhotos.length <= 1) return;
+    currentGroupIndex = (currentGroupIndex + step + currentGroupPhotos.length) % currentGroupPhotos.length;
+    updateLightboxContent();
 }
 
 function closeLightbox() {
@@ -1244,6 +1294,19 @@ function dismissWarning() {
         overlay.style.transition = 'opacity 0.4s';
         setTimeout(() => overlay.remove(), 400);
     }
+}
+
+function getSubTitleKey(photo) {
+    if (!photo) return 'UNKNOWN';
+    const raw = (photo.event || photo.desc || '').trim();
+    if (!raw) return 'UNKNOWN';
+    
+    const upper = raw.toUpperCase();
+    const colonIdx = upper.indexOf(':');
+    
+    return colonIdx !== -1 
+        ? upper.slice(colonIdx + 1).trim() 
+        : upper;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
