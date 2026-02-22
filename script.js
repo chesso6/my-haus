@@ -42,6 +42,11 @@ try {
 } catch (error) {
     console.error("Firebase init failed:", error);
 }
+function cleanImageUrl(url) {
+    // Strip everything after the image extension (jpg, jpeg, png, gif, webp, bmp, tiff, svg, avif, JPG, etc.)
+    const match = url.match(/^(.*?\.(jpe?g|png|gif|webp|bmp|tiff?|svg|avif|JPE?G|PNG|GIF|WEBP|BMP|TIFF?|SVG|AVIF))/i);
+    return match ? match[1] : url;
+}
 function detectMonth(str) {
     const s = (str || '').toUpperCase().trim();
     for (const key of MONTH_KEYS) {
@@ -318,34 +323,86 @@ function openAddModal() {
         </div>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('om-open'));
+    requestAnimationFrame(() => {
+        overlay.classList.add('om-open');
+        const urlInput = document.getElementById('m-url');
+        if (urlInput) {
+            urlInput.addEventListener('input', () => {
+                const cleaned = cleanImageUrl(urlInput.value.trim());
+                if (cleaned !== urlInput.value.trim()) urlInput.value = cleaned;
+            });
+        }
+    });
+}
+function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
+    const rawUrl    = document.getElementById('e-url').value.trim();
+    const url       = cleanImageUrl(rawUrl);
+    if (document.getElementById('e-url').value.trim() !== url) {
+        document.getElementById('e-url').value = url;
+    }
+    const desc      = document.getElementById('e-desc').value.trim();
+    const event     = document.getElementById('e-event').value.trim();
+    const year      = document.getElementById('e-year').value.trim();
+    const photogRaw = document.getElementById('e-photog-input').value.trim();
+    const newEraKey = document.getElementById('e-era').value;
+    if (!url || !year) return alert("URL and Year are required.");
+    const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
+        window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
+    );
+    const photogKey  = matchedKey || (photogRaw ? photogRaw : "NONE");
+    const updatedPhoto = { url, desc, event, year, photogKey };
+    const eraChanged = newEraKey !== originalEraKey;
+    const before = window._editBefore || {};
+    const after  = { url, desc, event, year, photogKey, era: newEraKey };
+    const doLog = () => logActivity('EDIT', { photoUrl: url, before, after });
+    if (eraChanged) {
+        database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`).remove()
+            .then(() => database.ref(`gagaArchive/${newEraKey}/photos`).push(updatedPhoto))
+            .then(() => { doLog(); alert("Photo moved and updated!"); closeOwnerModal(); closeLightbox(); location.reload(); })
+            .catch(err => alert("Update failed: " + err.message));
+    } else {
+        database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`).set(updatedPhoto)
+            .then(() => { doLog(); alert("Photo updated!"); closeOwnerModal(); closeLightbox(); location.reload(); })
+            .catch(err => alert("Update failed: " + err.message));
+    }
 }
 function saveNewPhoto() {
-    const url      = document.getElementById('m-url').value.trim();
-    const desc     = document.getElementById('m-desc').value.trim();
-    const event    = document.getElementById('m-event').value.trim();
-    const year     = document.getElementById('m-year').value.trim();
+    const rawUrl    = document.getElementById('m-url').value.trim();
+    const url       = cleanImageUrl(rawUrl);
+    const year      = document.getElementById('m-year').value.trim();
+    const eraKey    = document.getElementById('m-era').value;
+    const event     = document.getElementById('m-event').value.trim();
+    const desc      = document.getElementById('m-desc').value.trim();
     const photogRaw = document.getElementById('m-photog-input').value.trim();
-    const eraKey   = document.getElementById('m-era').value;
-    if (!url || !year || !eraKey) return alert("URL, Year, and Era are required.");
-    if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
+
+    if (!url || !year || !eraKey) {
+        alert("URL, Year, and Era are required.");
+        return;
+    }
+    if (rawUrl !== url) document.getElementById('m-url').value = url;
+
     const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
         window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
     );
     const photogKey = matchedKey || (photogRaw ? photogRaw : "NONE");
-    const normalizedEraKey = eraKey.toLowerCase().replace(/\s+/g, '-');
-    const newPhoto = { url, desc, event, year, photogKey };
-    if (archiveRef) {
-        database.ref(`gagaArchive/${normalizedEraKey}/photos`).push(newPhoto)
-            .then(() => {
-                logActivity('ADD', { photoUrl: url, era: normalizedEraKey, event, year, photographer: photogKey });
-                alert("Photo saved!");
-                closeOwnerModal();
-                location.reload();
-            })
-            .catch(err => alert("Failed to save: " + err.message));
-    } else {
-        alert("No connection to shared archive.");
+
+    const newPhoto = { url, year, event, desc, photogKey };
+
+    if (!database) {
+        alert("No database connection.");
+        return;
     }
+
+    database.ref(`gagaArchive/${eraKey}/photos`).push(newPhoto)
+        .then(() => {
+            logActivity('ADD', { era: eraKey, ...newPhoto });
+            alert("✅ Photo added successfully!");
+            closeOwnerModal();
+            location.reload();
+        })
+        .catch(err => {
+            alert("Failed to save photo: " + err.message);
+        });
 }
 function openEditModal(photoUrl) {
     if (!archiveRef) return alert("No connection.");
@@ -418,38 +475,20 @@ function openEditModal(photoUrl) {
                 </div>
             </div>`;
         document.body.appendChild(overlay);
-        requestAnimationFrame(() => overlay.classList.add('om-open'));
+        requestAnimationFrame(() => {
+            overlay.classList.add('om-open');
+            const urlInput = document.getElementById('e-url');
+            if (urlInput) {
+                urlInput.addEventListener('input', () => {
+                    const cleaned = cleanImageUrl(urlInput.value.trim());
+                    if (cleaned !== urlInput.value.trim()) urlInput.value = cleaned;
+                });
+            }
+        });
         window._editBefore = { url: foundPhoto.url, desc: foundPhoto.desc, event: foundPhoto.event, year: foundPhoto.year, photogKey: foundPhoto.photogKey, era: foundEraKey };
     });
 }
-function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
-    const url       = document.getElementById('e-url').value.trim();
-    const desc      = document.getElementById('e-desc').value.trim();
-    const event     = document.getElementById('e-event').value.trim();
-    const year      = document.getElementById('e-year').value.trim();
-    const photogRaw = document.getElementById('e-photog-input').value.trim();
-    const newEraKey = document.getElementById('e-era').value;
-    if (!url || !year) return alert("URL and Year are required.");
-    const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
-        window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
-    );
-    const photogKey  = matchedKey || (photogRaw ? photogRaw : "NONE");
-    const updatedPhoto = { url, desc, event, year, photogKey };
-    const eraChanged = newEraKey !== originalEraKey;
-    const before = window._editBefore || {};
-    const after  = { url, desc, event, year, photogKey, era: newEraKey };
-    const doLog = () => logActivity('EDIT', { photoUrl: url, before, after });
-    if (eraChanged) {
-        database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`).remove()
-            .then(() => database.ref(`gagaArchive/${newEraKey}/photos`).push(updatedPhoto))
-            .then(() => { doLog(); alert("Photo moved and updated!"); closeOwnerModal(); closeLightbox(); location.reload(); })
-            .catch(err => alert("Update failed: " + err.message));
-    } else {
-        database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`).set(updatedPhoto)
-            .then(() => { doLog(); alert("Photo updated!"); closeOwnerModal(); closeLightbox(); location.reload(); })
-            .catch(err => alert("Update failed: " + err.message));
-    }
-}
+
 function deletePhoto(photoUrl) {
     if (!confirm("DELETE THIS PHOTO PERMANENTLY?")) return;
     if (!archiveRef) return alert("No connection.");
