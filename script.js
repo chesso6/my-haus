@@ -1,20 +1,16 @@
 let isOwner = sessionStorage.getItem('haus_owner_mode') === 'true';
 let isEditor = !isOwner && !!sessionStorage.getItem('haus_editor_name');
 let editorName = sessionStorage.getItem('haus_editor_name') || '';
-
 function canEdit()   { return isOwner || isEditor; }
 function canDelete() { return isOwner; }
 function actorName() { return isOwner ? 'OWNER' : editorName; }
-
 let currentEraKey = "";
 let currentPage = 1;
-const SESSIONS_PER_PAGE = 10;
 let currentFilteredPhotos = [];
 let currentIndex = 0;
 let currentPhotogFilter = 'all';
 let currentTargetMonth = null;
 let currentTargetYear = null;
-
 const MONTH_ALIASES = {
     "JAN": "JANUARY", "FEB": "FEBRUARY", "MAR": "MARCH", "MARCH": "MARCH",
     "APR": "APRIL", "APRIL": "APRIL", "MAY": "MAY", "JUN": "JUNE",
@@ -22,12 +18,10 @@ const MONTH_ALIASES = {
     "SEP": "SEPTEMBER", "SEPT": "SEPTEMBER", "OCT": "OCTOBER",
     "NOV": "NOVEMBER", "DEC": "DECEMBER"
 };
-
 const MONTH_KEYS = Object.keys(MONTH_ALIASES).sort((a, b) => b.length - a.length);
 const FULL_MONTHS = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
-const PHOTOS_PER_SESSION_PAGE = 10;
+const SESSIONS_PER_PAGE = 10;
 const OWNER_PASSWORD = "HAUSOFGAGA";
-
 const firebaseConfig = {
     apiKey: "AIzaSyA_OzgQ2ah1mpF5gguB68BNpw8hGdN9Sbw",
     authDomain: "haus-archive-80d24.firebaseapp.com",
@@ -38,11 +32,9 @@ const firebaseConfig = {
     appId: "1:459748805258:web:a80ae4f4033a4b8e8a7b73",
     measurementId: "G-V27K42TTCQ"
 };
-
 let database;
 let archiveRef;
 const sessionPhotoPages = {};
-
 try {
     firebase.initializeApp(firebaseConfig);
     database = firebase.database();
@@ -50,7 +42,6 @@ try {
 } catch (error) {
     console.error("Firebase init failed:", error);
 }
-
 function detectMonth(str) {
     const s = (str || '').toUpperCase().trim();
     for (const key of MONTH_KEYS) {
@@ -58,7 +49,6 @@ function detectMonth(str) {
     }
     return null;
 }
-
 function getSessionKey(photo) {
     const source = (photo.event || photo.desc || '').toUpperCase().trim();
     const dateMatch = source.match(/^(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER|JAN|FEB|MAR|APR|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)\s*\d{1,2}/i);
@@ -66,7 +56,6 @@ function getSessionKey(photo) {
     if (source.includes(':')) return source.split(':')[0].trim().toUpperCase();
     return source.split(' ')[0].toUpperCase() || 'UNKNOWN';
 }
-
 function getSubTitleKey(photo) {
     if (!photo) return 'UNKNOWN';
     const raw = (photo.event || photo.desc || '').trim();
@@ -75,7 +64,6 @@ function getSubTitleKey(photo) {
     const colonIdx = upper.indexOf(':');
     return colonIdx !== -1 ? upper.slice(colonIdx + 1).trim() : upper;
 }
-
 function loadArchiveFromFirebase(callback) {
     if (!archiveRef) { callback(); return; }
     archiveRef.once('value')
@@ -100,7 +88,6 @@ function loadArchiveFromFirebase(callback) {
         })
         .catch(() => callback());
 }
-
 function showLobby() {
     localStorage.removeItem('haus_current_era');
     currentEraKey = "";
@@ -113,12 +100,12 @@ function showLobby() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) sidebar.style.display = 'none';
 }
-
 function openEra(key) {
     currentEraKey = key;
     currentPage = 1;
     currentTargetMonth = null;
     currentTargetYear = null;
+    Object.keys(sessionPhotoPages).forEach(k => { sessionPhotoPages[k] = 1; });
     localStorage.setItem('haus_current_era', key);
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('exhibition-room').style.display = 'block';
@@ -126,7 +113,6 @@ function openEra(key) {
     if (sidebar) sidebar.style.display = 'flex';
     renderPhotos();
 }
-
 function init() {
     loadArchiveFromFirebase(() => {
         filterEras('all');
@@ -142,7 +128,6 @@ function init() {
     });
     updateLoginBtn();
 }
-
 function updateLoginBtn() {
     const btn = document.getElementById('header-login-btn');
     if (!btn) return;
@@ -152,13 +137,10 @@ function updateLoginBtn() {
         btn.style.removeProperty('display');
     }
 }
-
 function showLogin() { showLoginModal(); }
-
 function showLoginModal() {
     const existing = document.getElementById('login-modal-overlay');
     if (existing) existing.remove();
-
     const overlay = document.createElement('div');
     overlay.id = 'login-modal-overlay';
     overlay.className = 'om-overlay';
@@ -193,24 +175,20 @@ function showLoginModal() {
     setTimeout(() => { const n = document.getElementById('login-name'); if (n) n.focus(); }, 250);
     overlay.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
 }
-
 function attemptLogin() {
     const nameVal = (document.getElementById('login-name')?.value || '').trim();
     const passVal = (document.getElementById('login-pass')?.value || '').trim();
     const errEl   = document.getElementById('login-error');
-
     if (passVal.toUpperCase() === OWNER_PASSWORD) {
         sessionStorage.setItem('haus_owner_mode', 'true');
         sessionStorage.removeItem('haus_editor_name');
         location.reload();
         return;
     }
-
     if (!database) {
         if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'NO CONNECTION'; }
         return;
     }
-
     database.ref('hausEditors').once('value').then(snap => {
         const editors = snap.val() || {};
         const match = Object.values(editors).find(e =>
@@ -227,7 +205,6 @@ function attemptLogin() {
         }
     });
 }
-
 function logout() {
     sessionStorage.removeItem('haus_owner_mode');
     sessionStorage.removeItem('haus_editor_name');
@@ -235,7 +212,6 @@ function logout() {
     isEditor = false;
     location.reload();
 }
-
 function renderOwnerUI() {
     const subNav = document.getElementById('sub-era-nav');
     if (!subNav) return;
@@ -247,11 +223,11 @@ function renderOwnerUI() {
     panel.innerHTML = `
         <span onclick="openAddModal()" style="color:#00ff88;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">[+] ADD</span>
         <span onclick="openActivityLog()" style="color:#ffaa00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">◈ LOG</span>
+        <span onclick="openEditorStats()" style="color:#88eeff;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">★ STATS</span>
         <span onclick="openEditorManager()" style="color:#aaaaff;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">⊞ EDITORS</span>
         <span onclick="logout()" style="color:#ff6a00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
     subNav.appendChild(panel);
 }
-
 function renderEditorUI() {
     const subNav = document.getElementById('sub-era-nav');
     if (!subNav) return;
@@ -266,7 +242,6 @@ function renderEditorUI() {
         <span onclick="logout()" style="color:#ff6a00;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">LOGOUT</span>`;
     subNav.appendChild(panel);
 }
-
 function logActivity(action, data) {
     if (!database) return;
     const entry = {
@@ -277,7 +252,6 @@ function logActivity(action, data) {
     };
     database.ref('hausActivityLog').push(entry).catch(() => {});
 }
-
 function closeOwnerModal() {
     const overlay = document.getElementById('owner-modal-overlay');
     if (overlay) {
@@ -287,7 +261,6 @@ function closeOwnerModal() {
     const legacy = document.getElementById('owner-modal');
     if (legacy) legacy.remove();
 }
-
 function openAddModal() {
     closeOwnerModal();
     const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
@@ -296,7 +269,6 @@ function openAddModal() {
     const eraOptions = Object.keys(window.gagaArchive || {}).map(k =>
         `<option value="${k}">${window.gagaArchive[k].title || k.toUpperCase()}</option>`
     ).join('');
-
     const overlay = document.createElement('div');
     overlay.id = 'owner-modal-overlay';
     overlay.className = 'om-overlay';
@@ -347,7 +319,6 @@ function openAddModal() {
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('om-open'));
 }
-
 function saveNewPhoto() {
     const url      = document.getElementById('m-url').value.trim();
     const desc     = document.getElementById('m-desc').value.trim();
@@ -355,17 +326,14 @@ function saveNewPhoto() {
     const year     = document.getElementById('m-year').value.trim();
     const photogRaw = document.getElementById('m-photog-input').value.trim();
     const eraKey   = document.getElementById('m-era').value;
-
     if (!url || !year || !eraKey) return alert("URL, Year, and Era are required.");
     if (!url.startsWith('http')) return alert("Please enter a valid image URL starting with http.");
-
     const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
         window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
     );
     const photogKey = matchedKey || (photogRaw ? photogRaw : "NONE");
     const normalizedEraKey = eraKey.toLowerCase().replace(/\s+/g, '-');
     const newPhoto = { url, desc, event, year, photogKey };
-
     if (archiveRef) {
         database.ref(`gagaArchive/${normalizedEraKey}/photos`).push(newPhoto)
             .then(() => {
@@ -379,7 +347,6 @@ function saveNewPhoto() {
         alert("No connection to shared archive.");
     }
 }
-
 function openEditModal(photoUrl) {
     if (!archiveRef) return alert("No connection.");
     archiveRef.once('value').then(snapshot => {
@@ -395,10 +362,6 @@ function openEditModal(photoUrl) {
             });
         });
         if (!foundPhoto) return alert("Photo not found in shared archive.");
-
-        const existingModal = document.getElementById('owner-modal');
-        if (existingModal) existingModal.remove();
-
         const photogOptions = Object.keys(window.gagaPhotogs || {}).map(k =>
             `<option value="${window.gagaPhotogs[k].name}">${window.gagaPhotogs[k].name}</option>`
         ).join('');
@@ -407,7 +370,6 @@ function openEditModal(photoUrl) {
         const eraOptions = Object.keys(window.gagaArchive || {}).map(k =>
             `<option value="${k}" ${foundEraKey === k ? 'selected' : ''}>${window.gagaArchive[k].title || k.toUpperCase()}</option>`
         ).join('');
-
         const overlay = document.createElement('div');
         overlay.id = 'owner-modal-overlay';
         overlay.className = 'om-overlay';
@@ -457,11 +419,9 @@ function openEditModal(photoUrl) {
             </div>`;
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('om-open'));
-
         window._editBefore = { url: foundPhoto.url, desc: foundPhoto.desc, event: foundPhoto.event, year: foundPhoto.year, photogKey: foundPhoto.photogKey, era: foundEraKey };
     });
 }
-
 function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
     const url       = document.getElementById('e-url').value.trim();
     const desc      = document.getElementById('e-desc').value.trim();
@@ -469,21 +429,16 @@ function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
     const year      = document.getElementById('e-year').value.trim();
     const photogRaw = document.getElementById('e-photog-input').value.trim();
     const newEraKey = document.getElementById('e-era').value;
-
     if (!url || !year) return alert("URL and Year are required.");
-
     const matchedKey = Object.keys(window.gagaPhotogs || {}).find(k =>
         window.gagaPhotogs[k].name.toLowerCase() === photogRaw.toLowerCase()
     );
     const photogKey  = matchedKey || (photogRaw ? photogRaw : "NONE");
     const updatedPhoto = { url, desc, event, year, photogKey };
     const eraChanged = newEraKey !== originalEraKey;
-
     const before = window._editBefore || {};
     const after  = { url, desc, event, year, photogKey, era: newEraKey };
-
     const doLog = () => logActivity('EDIT', { photoUrl: url, before, after });
-
     if (eraChanged) {
         database.ref(`gagaArchive/${originalEraKey}/photos/${photoKey}`).remove()
             .then(() => database.ref(`gagaArchive/${newEraKey}/photos`).push(updatedPhoto))
@@ -495,7 +450,6 @@ function saveEditedPhoto(originalEraKey, photoKey, originalUrl) {
             .catch(err => alert("Update failed: " + err.message));
     }
 }
-
 function deletePhoto(photoUrl) {
     if (!confirm("DELETE THIS PHOTO PERMANENTLY?")) return;
     if (!archiveRef) return alert("No connection.");
@@ -525,12 +479,10 @@ function deletePhoto(photoUrl) {
         }
     });
 }
-
 function openActivityLog() {
     if (!database) return alert("No connection.");
     const existing = document.getElementById('log-modal-overlay');
     if (existing) existing.remove();
-
     const overlay = document.createElement('div');
     overlay.id = 'log-modal-overlay';
     overlay.className = 'om-overlay';
@@ -550,27 +502,22 @@ function openActivityLog() {
         </div>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('om-open'));
-
     database.ref('hausActivityLog').orderByChild('timestamp').limitToLast(100).once('value').then(snap => {
         const body = document.getElementById('log-body');
         if (!body) return;
         const entries = [];
         snap.forEach(child => entries.push(child.val()));
         entries.reverse();
-
         if (entries.length === 0) {
             body.innerHTML = `<div class="log-empty">No activity recorded yet.</div>`;
             return;
         }
-
         body.innerHTML = entries.map(e => {
             const d  = new Date(e.timestamp);
             const ts = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                      + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
             const actionClass = e.action === 'ADD' ? 'log-add' : e.action === 'DELETE' ? 'log-del' : 'log-edit';
             const thumb = e.photoUrl ? `<img class="log-thumb" src="${e.photoUrl}" loading="lazy" onerror="this.style.display='none'">` : '';
-
             let details = '';
             if (e.action === 'EDIT' && e.before && e.after) {
                 const fields = ['url','event','desc','year','photogKey','era'];
@@ -587,7 +534,6 @@ function openActivityLog() {
             } else if (e.action === 'DELETE') {
                 details = `<div class="log-meta">${[e.era, e.event, e.year].filter(Boolean).join(' · ')}</div>`;
             }
-
             return `
                 <div class="log-entry">
                     <div class="log-entry-top">
@@ -608,12 +554,10 @@ function openActivityLog() {
         if (body) body.innerHTML = `<div class="log-empty">Failed to load log.</div>`;
     });
 }
-
 function openEditorManager() {
     if (!database) return alert("No connection.");
     const existing = document.getElementById('editors-modal-overlay');
     if (existing) existing.remove();
-
     const overlay = document.createElement('div');
     overlay.id = 'editors-modal-overlay';
     overlay.className = 'om-overlay';
@@ -650,7 +594,6 @@ function openEditorManager() {
     requestAnimationFrame(() => overlay.classList.add('om-open'));
     loadEditorsList();
 }
-
 function loadEditorsList() {
     const listEl = document.getElementById('editors-list');
     if (!listEl || !database) return;
@@ -673,7 +616,6 @@ function loadEditorsList() {
             </div>`;
     });
 }
-
 function addEditor() {
     const name = document.getElementById('new-editor-name')?.value.trim();
     const pass = document.getElementById('new-editor-pass')?.value.trim();
@@ -687,14 +629,87 @@ function addEditor() {
         })
         .catch(err => alert("Failed: " + err.message));
 }
-
 function removeEditor(key) {
     if (!confirm("Remove this editor?")) return;
     database.ref(`hausEditors/${key}`).remove()
         .then(() => loadEditorsList())
         .catch(err => alert("Failed: " + err.message));
 }
-
+function openEditorStats() {
+    if (!database) return alert("No connection.");
+    const existing = document.getElementById('stats-modal-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'stats-modal-overlay';
+    overlay.className = 'om-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+        <div class="om-panel" style="max-width:560px;">
+            <div class="om-header">
+                <div class="om-header-left">
+                    <span class="om-badge" style="background:#88eeff;color:#000;">STATS</span>
+                    <h2 class="om-title">Editor Contributions</h2>
+                </div>
+                <button class="om-close" onclick="document.getElementById('stats-modal-overlay').remove()">×</button>
+            </div>
+            <div id="stats-body" class="log-body" style="padding:0;">
+                <div class="log-loading">Loading...</div>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('om-open'));
+    database.ref('hausActivityLog').once('value').then(snap => {
+        const body = document.getElementById('stats-body');
+        if (!body) return;
+        const counts = {};
+        snap.forEach(child => {
+            const e = child.val();
+            const actor = e.actor || 'UNKNOWN';
+            if (!counts[actor]) counts[actor] = { ADD: 0, EDIT: 0, DELETE: 0, total: 0 };
+            if (e.action === 'ADD') counts[actor].ADD++;
+            else if (e.action === 'EDIT') counts[actor].EDIT++;
+            else if (e.action === 'DELETE') counts[actor].DELETE++;
+            counts[actor].total++;
+        });
+        const sorted = Object.entries(counts).sort((a, b) => b[1].total - a[1].total);
+        if (sorted.length === 0) {
+            body.innerHTML = `<div class="log-empty">No activity recorded yet.</div>`;
+            return;
+        }
+        const totalAll = sorted.reduce((s, [, c]) => s + c.total, 0);
+        body.innerHTML = `
+            <div style="padding:16px 24px 8px;border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;margin-bottom:12px;">Total actions: <span style="color:#fff;">${totalAll}</span></div>
+                <div style="display:grid;grid-template-columns:1fr 60px 60px 60px 60px;gap:0;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:#555;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span>Editor</span><span style="text-align:center;">Add</span><span style="text-align:center;">Edit</span><span style="text-align:center;">Del</span><span style="text-align:center;">Total</span>
+                </div>
+            </div>
+            <div style="padding:0 24px 16px;">
+                ${sorted.map(([actor, c], i) => {
+                    const isOwnerRow = actor === 'OWNER';
+                    const barWidth = totalAll > 0 ? Math.round((c.total / totalAll) * 100) : 0;
+                    return `
+                    <div style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                        <div style="display:grid;grid-template-columns:1fr 60px 60px 60px 60px;align-items:center;gap:0;margin-bottom:8px;">
+                            <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:${isOwnerRow ? '#ff6a00' : '#ffffff'};">
+                                ${actor}${isOwnerRow ? ' 👑' : ''}
+                            </span>
+                            <span style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:#00ff88;">${c.ADD}</span>
+                            <span style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:#ffaa00;">${c.EDIT}</span>
+                            <span style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:#ff6a00;">${c.DELETE}</span>
+                            <span style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;color:#fff;">${c.total}</span>
+                        </div>
+                        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">
+                            <div style="height:100%;width:${barWidth}%;background:${isOwnerRow ? '#ff6a00' : '#88eeff'};border-radius:2px;transition:width 0.4s;"></div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+    }).catch(() => {
+        const body = document.getElementById('stats-body');
+        if (body) body.innerHTML = `<div class="log-empty">Failed to load stats.</div>`;
+    });
+}
 function filterPhotographers() {
     const input = document.getElementById('photogSearch');
     if (!input) return;
@@ -705,7 +720,6 @@ function filterPhotographers() {
         buttons[i].style.display = txt.toUpperCase().indexOf(filter) > -1 ? "" : "none";
     }
 }
-
 function setupSearchKey() {
     const searchBar = document.getElementById('photogSearch');
     if (searchBar) {
@@ -722,9 +736,7 @@ function setupSearchKey() {
         });
     }
 }
-
 let dragSrc = null;
-
 function makeDraggable(grid, photosRef) {
     function getItems() { return Array.from(grid.querySelectorAll('.photo-item:not(.photo-item-empty)')); }
     grid.addEventListener('dragstart', (e) => {
@@ -764,7 +776,6 @@ function makeDraggable(grid, photosRef) {
         showDragSaveBar(grid, photosRef);
     });
 }
-
 function showDragSaveBar(grid, photosRef) {
     const wrapper = grid.closest('.session-photos-wrapper');
     if (!wrapper) return;
@@ -776,7 +787,6 @@ function showDragSaveBar(grid, photosRef) {
     bar.querySelectorAll('button')[0].onclick = () => saveDragOrder(bar.querySelectorAll('button')[0], photosRef.map(p => p.url));
     wrapper.appendChild(bar);
 }
-
 function saveDragOrder(btn, orderedUrls) {
     if (!archiveRef) return alert("No connection.");
     btn.textContent = 'SAVING...'; btn.disabled = true;
@@ -809,20 +819,31 @@ function saveDragOrder(btn, orderedUrls) {
             .catch(err => { alert("Save failed: " + err.message); btn.textContent = 'SAVE ORDER'; btn.disabled = false; });
     });
 }
-
+const PHOTOS_PER_SESSION_PAGE = 10;
 function buildSessionPhotoGrid(sessionKey, photos, observer) {
+    if (!photos || photos.length === 0) return null;
     const wrapper = document.createElement('div');
     wrapper.className = 'session-photos-wrapper';
+    function getItemsPerPage() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        if (w < 768) return 4;
+        if (w <= 1024 && h > w) return 10;
+        return 10;
+    }
+    const itemsPerPage = getItemsPerPage();
     const totalPhotos = photos.length;
-
-    if (totalPhotos <= PHOTOS_PER_SESSION_PAGE) {
+    if (totalPhotos <= itemsPerPage) {
         const grid = document.createElement('div');
         grid.className = 'photo-wall-inner';
-        const pagePhotosRef = photos.slice();
-        pagePhotosRef.forEach(photo => grid.appendChild(createPhotoItem(photo, observer)));
-        const remaining = PHOTOS_PER_SESSION_PAGE - totalPhotos;
-        for (let i = 0; i < remaining; i++) { const e = document.createElement('div'); e.className = 'photo-item photo-item-empty'; grid.appendChild(e); }
-        if (canEdit()) makeDraggable(grid, pagePhotosRef);
+        photos.forEach(photo => grid.appendChild(createPhotoItem(photo, observer)));
+        const empties = itemsPerPage - totalPhotos;
+        for (let i = 0; i < empties; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'photo-item photo-item-empty';
+            grid.appendChild(empty);
+        }
+        if (canEdit()) makeDraggable(grid, photos.slice());
         wrapper.appendChild(grid);
         const spacer = document.createElement('div');
         spacer.className = 'session-pagination session-pagination-spacer';
@@ -830,36 +851,46 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
         wrapper.appendChild(spacer);
         return wrapper;
     }
-
-    const totalSessionPages = Math.ceil(totalPhotos / PHOTOS_PER_SESSION_PAGE);
     if (!sessionPhotoPages[sessionKey]) sessionPhotoPages[sessionKey] = 1;
-
     function renderPage() {
         wrapper.innerHTML = '';
         const pg = sessionPhotoPages[sessionKey];
-        const pagePhotos = photos.slice((pg - 1) * PHOTOS_PER_SESSION_PAGE, Math.min(pg * PHOTOS_PER_SESSION_PAGE, totalPhotos));
+        const pagePhotos = photos.slice((pg - 1) * itemsPerPage, pg * itemsPerPage);
         const pagePhotosRef = pagePhotos.slice();
         const grid = document.createElement('div');
         grid.className = 'photo-wall-inner';
         pagePhotosRef.forEach(photo => grid.appendChild(createPhotoItem(photo, observer)));
-        const remaining = PHOTOS_PER_SESSION_PAGE - pagePhotos.length;
-        for (let i = 0; i < remaining; i++) { const e = document.createElement('div'); e.className = 'photo-item photo-item-empty'; grid.appendChild(e); }
+        const remaining = itemsPerPage - pagePhotos.length;
+        for (let i = 0; i < remaining; i++) {
+            const e = document.createElement('div');
+            e.className = 'photo-item photo-item-empty';
+            grid.appendChild(e);
+        }
         if (canEdit()) makeDraggable(grid, pagePhotosRef);
         wrapper.appendChild(grid);
-
+        const totalSessionPages = Math.ceil(totalPhotos / itemsPerPage);
         const pager = document.createElement('div');
         pager.className = 'session-pagination';
-        const prev = document.createElement('span'); prev.className = 'pag-nav-btn'; prev.textContent = '← PREV';
+        const prev = document.createElement('span'); 
+        prev.className = 'pag-nav-btn'; 
+        prev.textContent = '← PREV';
         if (pg > 1) prev.onclick = () => { sessionPhotoPages[sessionKey] = pg - 1; renderPage(); };
         else prev.classList.add('hidden-btn');
         pager.appendChild(prev);
         for (let p = 1; p <= totalSessionPages; p++) {
-            const link = document.createElement('span'); link.className = 'pag-num-btn'; link.textContent = p;
-            if (p === pg) { link.style.fontWeight = 'bold'; link.style.textDecoration = 'underline'; link.style.color = '#fff'; }
-            link.onclick = ((page) => () => { sessionPhotoPages[sessionKey] = page; renderPage(); })(p);
+            const link = document.createElement('span'); 
+            link.className = 'pag-num-btn'; 
+            link.textContent = p;
+            if (p === pg) { 
+                link.style.fontWeight = 'bold'; 
+                link.style.color = '#fff'; 
+            }
+            link.onclick = () => { sessionPhotoPages[sessionKey] = p; renderPage(); };
             pager.appendChild(link);
         }
-        const next = document.createElement('span'); next.className = 'pag-nav-btn'; next.textContent = 'NEXT →';
+        const next = document.createElement('span'); 
+        next.className = 'pag-nav-btn'; 
+        next.textContent = 'NEXT →';
         if (pg < totalSessionPages) next.onclick = () => { sessionPhotoPages[sessionKey] = pg + 1; renderPage(); };
         else next.classList.add('hidden-btn');
         pager.appendChild(next);
@@ -868,23 +899,18 @@ function buildSessionPhotoGrid(sessionKey, photos, observer) {
     renderPage();
     return wrapper;
 }
-
 function createPhotoItem(photo, observer) {
     const photoDiv = document.createElement('div');
     photoDiv.className = 'photo-item';
     if (canEdit()) photoDiv.draggable = true;
-
     const photogDisplay = (photo.photogKey === "NONE" || !photo.photogKey)
         ? ""
         : (window.gagaPhotogs[photo.photogKey] ? window.gagaPhotogs[photo.photogKey].name.toUpperCase() : photo.photogKey.toUpperCase());
-
     const descLabel = photo.desc ? photo.desc.toUpperCase() : '';
-
     const editOverlay = canEdit()
         ? `<div class="owner-edit-overlay" onclick="event.stopPropagation(); openEditModal('${photo.url}')">✎ EDIT</div>` : '';
     const dragHandle = canEdit()
         ? `<div class="drag-handle">⠿</div>` : '';
-
     photoDiv.innerHTML = `
         ${editOverlay}${dragHandle}
         <img data-src="${photo.url}" loading="lazy" onclick="openLightbox(${photo.globalIndex})" style="opacity:0;transition:opacity 0.3s;">
@@ -898,15 +924,17 @@ function createPhotoItem(photo, observer) {
     observer.observe(img);
     return photoDiv;
 }
-
 function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth = null, page = 1, targetYear = currentTargetYear) {
-    currentPhotogFilter = filterKey; currentPage = page;
+    currentPhotogFilter = filterKey;
+    if (page !== currentPage) {
+        Object.keys(sessionPhotoPages).forEach(k => { sessionPhotoPages[k] = 1; });
+    }
+    currentPage = page;
     currentTargetMonth = targetMonth; currentTargetYear = targetYear;
     const display = document.getElementById('photo-display');
     const titleEl = document.getElementById('active-title');
     if (!display) return;
     display.innerHTML = '';
-
     let rawPhotos = [];
     if (currentEraKey) {
         rawPhotos = window.gagaArchive[currentEraKey]?.photos || [];
@@ -923,10 +951,8 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         });
         titleEl.innerText = filterKey === 'all' ? "FULL GALLERY" : `ALL WORK BY ${(window.gagaPhotogs[filterKey]?.name || filterKey).toUpperCase()}`;
     }
-
     if (rawPhotos.length === 0) { display.innerHTML = `<div class="no-results">NO PHOTOS FOUND.</div>`; return; }
     currentFilteredPhotos = rawPhotos;
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -935,14 +961,12 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             }
         });
     }, { rootMargin: '400px' });
-
     const yearGroups = {};
     rawPhotos.forEach((photo, index) => {
         const year = photo.year; if (!year) return;
         if (!yearGroups[year]) yearGroups[year] = [];
         yearGroups[year].push({ ...photo, globalIndex: index });
     });
-
     const sortedYears = Object.keys(yearGroups).sort((a, b) => a - b);
     const allSessions = [];
     const allYearMonths = {};
@@ -951,7 +975,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         yearGroups[y].forEach(p => { const m = detectMonth(p.event || p.desc || ''); if (m) months.add(m); });
         allYearMonths[y] = Array.from(months).sort((a, b) => FULL_MONTHS.indexOf(a) - FULL_MONTHS.indexOf(b));
     });
-
     const yearsToRender = (targetYear && !currentEraKey) ? [targetYear] : sortedYears;
     yearsToRender.forEach(year => {
         if (!yearGroups[year] || yearGroups[year].length === 0) return;
@@ -973,14 +996,11 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             allSessions.push({ year, sessionKey, photos: sessionGroups[sessionKey], isFirstOfYear: i === 0, availableMonths: allYearMonths[year] });
         });
     });
-
     if (allSessions.length === 0) { display.innerHTML = `<div class="no-results">NO PHOTOS FOUND.</div>`; return; }
-
     const totalSessions = allSessions.length;
     const totalPages = Math.ceil(totalSessions / SESSIONS_PER_PAGE);
     const pageSessions = allSessions.slice((currentPage - 1) * SESSIONS_PER_PAGE, Math.min(currentPage * SESSIONS_PER_PAGE, totalSessions));
     const renderedYears = new Set();
-
     function buildPagination() {
         if (totalPages <= 1) return null;
         const pagination = document.createElement('div');
@@ -1001,7 +1021,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         pagination.appendChild(next);
         return pagination;
     }
-
     pageSessions.forEach(({ year, sessionKey, photos, availableMonths }, sessionIdx) => {
         const shouldShowHeader = !currentTargetMonth || sessionIdx === 0;
         if (shouldShowHeader && !renderedYears.has(year)) {
@@ -1038,7 +1057,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             display.appendChild(headerRow);
             if (sessionIdx === 0) { const topPag = buildPagination(); if (topPag) display.appendChild(topPag); }
         }
-
         const eventGroups = {}, eventOrder = [];
         photos.forEach(p => {
             const raw = (p.event || p.desc || '').trim();
@@ -1047,7 +1065,6 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
             if (!eventGroups[eventName]) { eventGroups[eventName] = []; eventOrder.push(eventName); }
             eventGroups[eventName].push(p);
         });
-
         const sessionBox = document.createElement('div');
         sessionBox.className = 'event-session-box';
         sessionBox.innerHTML = `
@@ -1061,13 +1078,10 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
                 </div>
                 <div class="photo-wall"></div>
             </div>`;
-
         const subTitlesEl = sessionBox.querySelector('.event-sub-titles');
         const photoWall   = sessionBox.querySelector('.photo-wall');
         let activeEvent = eventOrder[0];
-
         function renderEventGrid(name) { photoWall.innerHTML = ''; photoWall.appendChild(buildSessionPhotoGrid(sessionKey + name, eventGroups[name], observer)); }
-
         eventOrder.forEach((name, idx) => {
             const span = document.createElement('span');
             span.className = 'session-event-name' + (idx === 0 ? ' active-event' : ''); span.textContent = name;
@@ -1081,12 +1095,10 @@ function renderPhotos(filterKey = currentPhotogFilter, btn = null, targetMonth =
         renderEventGrid(activeEvent);
         display.appendChild(sessionBox);
     });
-
     const bottomPagination = buildPagination();
     if (bottomPagination) display.appendChild(bottomPagination);
     setTimeout(() => { fixYearMonthBar(); startYearMonthBarObserver(); }, 0);
 }
-
 function filterEras(category) {
     const menu = document.getElementById('era-menu');
     const subNav = document.getElementById('sub-era-nav');
@@ -1120,7 +1132,6 @@ function filterEras(category) {
     if (isOwner) renderOwnerUI();
     else if (isEditor) renderEditorUI();
 }
-
 function renderSidebar() {
     const nav = document.getElementById('photog-filters');
     if (!nav) return;
@@ -1141,7 +1152,6 @@ function renderSidebar() {
         btn.onclick = () => { currentEraKey = ""; renderPhotos(name); }; nav.appendChild(btn);
     });
 }
-
 function handlePhotogClick(event, photogKey) {
     if (!photogKey || photogKey === "NONE") return;
     event.stopPropagation(); currentEraKey = ""; currentPage = 1;
@@ -1150,16 +1160,13 @@ function handlePhotogClick(event, photogKey) {
     const sidebar = document.getElementById('sidebar'); if (sidebar) sidebar.style.display = 'flex';
     renderPhotos(photogKey);
 }
-
 function updateSubNavHighlight(activeKey) {
     document.querySelectorAll('.nav-item').forEach(item => {
         const eraKey = Object.keys(window.gagaArchive).find(k => window.gagaArchive[k].title === item.innerText);
         item.classList.toggle('active-era', eraKey === activeKey || (item.innerText === "ALL" && activeKey === ""));
     });
 }
-
 let currentGroupPhotos = [], currentGroupIndex = 0;
-
 function openLightbox(globalIndex) {
     currentIndex = globalIndex;
     const photo = currentFilteredPhotos[currentIndex];
@@ -1171,16 +1178,13 @@ function openLightbox(globalIndex) {
     buildThumbnails();
     updateLightboxContent();
 }
-
 function updateLightboxContent() {
     const d = currentGroupPhotos[currentGroupIndex];
     document.getElementById('lightbox-img').src = d.url;
     const name = (d.photogKey === "NONE" || !d.photogKey) ? ""
         : (window.gagaPhotogs[d.photogKey] ? window.gagaPhotogs[d.photogKey].name.toUpperCase() : d.photogKey.toUpperCase());
-
     const editItem   = canEdit()   ? `<button class="lb-menu-item edit"   onclick="openEditModal('${d.url}'); closeLbMenu(); event.stopPropagation();">✎ EDIT</button>` : '';
     const deleteItem = canDelete() ? `<button class="lb-menu-item delete" onclick="deletePhoto('${d.url}'); closeLbMenu(); event.stopPropagation();">✕ DELETE</button>` : '';
-
     document.getElementById('lightbox-caption').innerHTML = `
         <div class="lb-info">
             <div class="lb-title">${name} ${d.year ? '(' + d.year + ')' : ''}</div>
@@ -1195,7 +1199,6 @@ function updateLightboxContent() {
         </div>`;
     updateActiveThumbnail();
 }
-
 function buildThumbnails() {
     const container = document.getElementById('lightbox-thumbnails'); container.innerHTML = '';
     currentGroupPhotos.forEach((photo, i) => {
@@ -1204,14 +1207,12 @@ function buildThumbnails() {
         container.appendChild(thumb);
     });
 }
-
 function updateActiveThumbnail() {
     document.querySelectorAll('#lightbox-thumbnails img').forEach((thumb, i) => {
         thumb.classList.toggle('active', i === currentGroupIndex);
         if (i === currentGroupIndex) thumb.scrollIntoView({ behavior: 'smooth', inline: 'center' });
     });
 }
-
 async function downloadImage() {
     const url = document.getElementById('lightbox-img').src;
     try {
@@ -1222,32 +1223,26 @@ async function downloadImage() {
         window.URL.revokeObjectURL(blobURL);
     } catch (err) { window.open(url, '_blank'); }
 }
-
 function changeImage(step) {
     if (currentGroupPhotos.length <= 1) return;
     currentGroupIndex = (currentGroupIndex + step + currentGroupPhotos.length) % currentGroupPhotos.length;
     updateLightboxContent();
 }
-
 function closeLightbox() {
     document.getElementById('lightbox').style.display = 'none';
     document.body.style.overflow = 'auto';
     closeLbMenu();
 }
-
 function toggleLbMenu(e) {
     e.stopPropagation();
     const menu = document.getElementById('lb-menu'); if (!menu) return;
     const isOpen = menu.classList.contains('open'); closeLbMenu();
     if (!isOpen) menu.classList.add('open');
 }
-
 function closeLbMenu() {
     const menu = document.getElementById('lb-menu'); if (menu) menu.classList.remove('open');
 }
-
 document.addEventListener('click', (e) => { if (!e.target.closest('.lb-kebab-wrap')) closeLbMenu(); });
-
 document.addEventListener('keydown', (e) => {
     if (document.getElementById('lightbox').style.display === 'flex') {
         if (e.key === "ArrowLeft") changeImage(-1);
@@ -1255,14 +1250,12 @@ document.addEventListener('keydown', (e) => {
         if (e.key === "Escape") closeLightbox();
     }
 });
-
 function fixYearMonthBar() {
-    const header = document.querySelector('#exhibition-room .header');
+    const header = document.querySelector('.header');
     if (!header) return;
-    const h = Math.round(header.getBoundingClientRect().height);
-    document.querySelectorAll('.year-month-header').forEach(bar => { bar.style.top = h + 'px'; });
+    const h = header.offsetHeight;
+    document.documentElement.style.setProperty('--exhibition-header-height', h + 'px');
 }
-
 let _ymhObserver = null;
 function startYearMonthBarObserver() {
     const header = document.querySelector('#exhibition-room .header');
@@ -1271,7 +1264,6 @@ function startYearMonthBarObserver() {
     _ymhObserver = new ResizeObserver(() => fixYearMonthBar());
     _ymhObserver.observe(header);
 }
-
 function showContentWarning() {
     if (sessionStorage.getItem('haus_cw_accepted')) return;
     const overlay = document.createElement('div'); overlay.id = 'content-warning';
@@ -1295,13 +1287,11 @@ function showContentWarning() {
         </div>`;
     document.body.appendChild(overlay);
 }
-
 function dismissWarning() {
     sessionStorage.setItem('haus_cw_accepted', 'true');
     const overlay = document.getElementById('content-warning');
     if (overlay) { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.4s'; setTimeout(() => overlay.remove(), 400); }
 }
-
 document.addEventListener('DOMContentLoaded', () => {
     showContentWarning();
     init();
