@@ -127,7 +127,9 @@
 body {
     font-family: 'Barlow Condensed', sans-serif;
     overflow-y: auto;
-    background: var(--black);
+    background: 
+        linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.75)),
+        url('https://i.pinimg.com/736x/22/57/7e/22577e609e3f55e23ea3f19e57062ef6.jpg') center/cover no-repeat fixed;
     color: var(--off-white);
 }
 
@@ -224,8 +226,9 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    background: var(--black);
-    border-bottom: 1px solid var(--border);
+    background: #000000;
+    border-bottom: 2px solid var(--red);
+    box-shadow: 0 4px 20px rgba(255,106,0,0.25);
     z-index: 1000;
 }
 
@@ -237,6 +240,11 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
+}
+
+.header-content h1 {
+    color: var(--red) !important;
+    text-shadow: 0 3px 12px rgba(255,106,0,0.6);
 }
 
 .global-header h1 {
@@ -251,10 +259,11 @@ body {
 .global-header p {
     margin: 0 0 6px;
     font-size: 11px;
-    color: var(--gray-light);
+    color: #cccccc;
     letter-spacing: 6px;
     text-transform: uppercase;
     font-family: 'Space Mono', monospace;
+    
 }
 
 .category-nav {
@@ -267,7 +276,7 @@ body {
     font-size: 13px;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: var(--gray-light);
+    color: #aaaaaa;
     cursor: pointer;
     transition: color 0.15s;
     font-weight: 700;
