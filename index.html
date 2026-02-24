@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MY HAUS | ARCHIVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="https://i.pinimg.com/736x/09/2d/a5/092da587bbddfd04729ed3ef061d7444.jpg">
@@ -12,7 +12,7 @@
 
     <div class="main-layout">
         
-        <div id="sidebar">
+        <div id="sidebar" style="display:none;">
             <h3>PHOTOGRAPHERS</h3>
             <input type="text" id="photogSearch" oninput="filterPhotographers()" placeholder="SEARCH PHOTOGRAPHERS...">
             <div id="photog-filters">
@@ -55,7 +55,9 @@
     </div>
 
     <div class="lightbox-content" onclick="event.stopPropagation()">
-        <img id="lightbox-img" src="">
+        <div class="lightbox-image-wrapper">
+            <img id="lightbox-img" src="">
+        </div>
         
         <div id="lightbox-thumbnails" class="lb-thumbs"></div>
         
@@ -84,5 +86,8 @@
     <script src="eras/mayhem.js"></script>
     
     <script src="script.js"></script>
+
+    
+</div>
 </body>
 </html>
