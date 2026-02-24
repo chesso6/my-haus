@@ -94,7 +94,7 @@ function loadArchiveFromFirebase(callback) {
         .catch(() => callback());
 }
 function showLobby() {
-    localStorage.removeItem('haus_current_era');
+    sessionStorage.removeItem('haus_current_era');
     currentEraKey = "";
     currentPhotogFilter = 'all';
     currentPage = 1;
@@ -111,7 +111,7 @@ function openEra(key) {
     currentTargetMonth = null;
     currentTargetYear = null;
     Object.keys(sessionPhotoPages).forEach(k => { sessionPhotoPages[k] = 1; });
-    localStorage.setItem('haus_current_era', key);
+    sessionStorage.setItem('haus_current_era', key);
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('exhibition-room').style.display = 'block';
     const sidebar = document.getElementById('sidebar');
@@ -125,7 +125,7 @@ function init() {
         if (isOwner) renderOwnerUI();
         else if (isEditor) renderEditorUI();
         setupSearchKey();
-        const savedEra = localStorage.getItem('haus_current_era');
+        const savedEra = sessionStorage.getItem('haus_current_era');
         if (savedEra && window.gagaArchive[savedEra]) openEra(savedEra);
     });
     document.addEventListener('keydown', (e) => {
